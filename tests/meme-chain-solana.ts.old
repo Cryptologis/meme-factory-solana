@@ -1,0 +1,74 @@
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { MemeChainSolana } from "../target/types/meme_chain_solana";
+import assert from "assert";
+
+describe("meme-chain-solana", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+
+  const program = anchor.workspace.MemeChainSolana as Program<MemeChainSolana>;
+  
+  // Generate a keypair for the global state account
+  const globalState = anchor.web3.Keypair.generate();
+
+  it("Is initialized!", async () => {
+    const tx = await program.methods
+      .initialize()
+      .accounts({
+        globalState: globalState.publicKey,
+        authority: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([globalState])
+      .rpc();
+    
+    console.log("Your transaction signature", tx);
+    
+    // Verify the global state was initialized
+    const globalStateAccount = await program.account.globalState.fetch(
+      globalState.publicKey
+    );
+    
+    assert.equal(
+      globalStateAccount.authority.toString(),
+      provider.wallet.publicKey.toString()
+    );
+    assert.equal(globalStateAccount.totalMemes.toNumber(), 0);
+    assert.equal(globalStateAccount.totalEngagement.toNumber(), 0);
+    
+    console.log("✅ Global state initialized successfully!");
+  });
+
+  it("Creates a meme", async () => {
+    const meme = anchor.web3.Keypair.generate();
+    
+    const tx = await program.methods
+      .createMeme(
+        "This is my first meme on Solana!",
+        "https://example.com/meme.jpg",
+        ["solana", "meme", "viral"]
+      )
+      .accounts({
+        meme: meme.publicKey,
+        globalState: globalState.publicKey,
+        creator: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([meme])
+      .rpc();
+    
+    console.log("Meme created, transaction signature", tx);
+    
+    // Verify the meme was created
+    const memeAccount = await program.account.meme.fetch(meme.publicKey);
+    assert.equal(
+      memeAccount.creator.toString(),
+      provider.wallet.publicKey.toString()
+    );
+    assert.equal(memeAccount.content, "This is my first meme on Solana!");
+    assert.equal(memeAccount.likes.toNumber(), 0);
+    
+    console.log("✅ Meme created successfully!");
+  });
+});

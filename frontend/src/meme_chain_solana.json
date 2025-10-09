@@ -1,0 +1,247 @@
+{
+  "address": "5mE8RwFEnMJ1Rs4bLM2VSrzMN8RSEJkf1vXb9VpAybvi",
+  "metadata": {
+    "name": "meme_chain_solana",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "create_meme",
+      "discriminator": [
+        0,
+        44,
+        207,
+        61,
+        251,
+        247,
+        167,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "meme",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_state",
+          "writable": true
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "content",
+          "type": "string"
+        },
+        {
+          "name": "image_url",
+          "type": "string"
+        },
+        {
+          "name": "tags",
+          "type": {
+            "vec": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "engage_meme",
+      "discriminator": [
+        251,
+        96,
+        163,
+        206,
+        80,
+        114,
+        84,
+        181
+      ],
+      "accounts": [
+        {
+          "name": "meme",
+          "writable": true
+        },
+        {
+          "name": "global_state",
+          "writable": true
+        },
+        {
+          "name": "user",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "engagement_type",
+          "type": {
+            "defined": {
+              "name": "EngagementType"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GlobalState",
+      "discriminator": [
+        163,
+        46,
+        74,
+        168,
+        216,
+        123,
+        133,
+        98
+      ]
+    },
+    {
+      "name": "Meme",
+      "discriminator": [
+        232,
+        224,
+        0,
+        147,
+        187,
+        194,
+        135,
+        26
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "EngagementType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Like"
+          },
+          {
+            "name": "Share"
+          },
+          {
+            "name": "Comment"
+          },
+          {
+            "name": "View"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GlobalState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_memes",
+            "type": "u64"
+          },
+          {
+            "name": "total_engagement",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Meme",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "content",
+            "type": "string"
+          },
+          {
+            "name": "image_url",
+            "type": "string"
+          },
+          {
+            "name": "tags",
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "likes",
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "type": "u64"
+          },
+          {
+            "name": "comments",
+            "type": "u64"
+          },
+          {
+            "name": "views",
+            "type": "u64"
+          },
+          {
+            "name": "viral_score",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

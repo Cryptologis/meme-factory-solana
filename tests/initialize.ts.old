@@ -1,0 +1,27 @@
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { MemeChainSolana } from "../target/types/meme_chain_solana";
+
+describe("Initialize", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+
+  const program = anchor.workspace.MemeChainSolana as Program<MemeChainSolana>;
+
+  it("Initializes the program", async () => {
+    const globalState = anchor.web3.Keypair.generate();
+    
+    const tx = await program.methods
+      .initialize()
+      .accounts({
+        globalState: globalState.publicKey,
+        authority: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([globalState])
+      .rpc();
+
+    console.log("Global state created:", globalState.publicKey.toString());
+    console.log("Transaction signature:", tx);
+  });
+});

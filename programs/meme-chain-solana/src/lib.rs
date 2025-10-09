@@ -1,0 +1,523 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, MintTo};
+use anchor_spl::associated_token::AssociatedToken;
+
+declare_id!("5mE8RwFEnMJ1Rs4bLM2VSrzMN8RSEJkf1vXb9VpAybvi");
+
+#[program]
+pub mod meme_chain {
+    use super::*;
+
+    pub fn initialize_protocol(
+        ctx: Context<InitializeProtocol>,
+        protocol_fee_bps: u16,
+        creation_fee_lamports: u64,
+        graduation_threshold: u64,
+    ) -> Result<()> {
+        let protocol = &mut ctx.accounts.protocol;
+        protocol.authority = ctx.accounts.authority.key();
+        protocol.fee_recipient = ctx.accounts.fee_recipient.key();
+        protocol.protocol_fee_bps = protocol_fee_bps;
+        protocol.creation_fee_lamports = creation_fee_lamports;
+        protocol.graduation_threshold = graduation_threshold;
+        protocol.total_memes_created = 0;
+        protocol.total_volume = 0;
+        Ok(())
+    }
+
+    pub fn create_meme_token(
+        ctx: Context<CreateMemeToken>,
+        name: String,
+        symbol: String,
+        uri: String,
+        image_hash: [u8; 32],
+        initial_supply: u64,
+    ) -> Result<()> {
+        require!(name.len() <= 32, ErrorCode::NameTooLong);
+        require!(symbol.len() <= 10, ErrorCode::SymbolTooLong);
+        require!(uri.len() <= 200, ErrorCode::UriTooLong);
+        
+        let protocol = &mut ctx.accounts.protocol;
+        let meme = &mut ctx.accounts.meme;
+        let clock = Clock::get()?;
+
+        meme.creator = ctx.accounts.creator.key();
+        meme.mint = ctx.accounts.mint.key();
+        meme.name = name;
+        meme.symbol = symbol.clone();
+        meme.uri = uri;
+        meme.image_hash = image_hash;
+        meme.created_at = clock.unix_timestamp;
+        meme.total_supply = initial_supply;
+        meme.circulating_supply = 0;
+        meme.bonding_curve_supply = initial_supply;
+        meme.is_graduated = false;
+        meme.total_volume = 0;
+        meme.holders_count = 0;
+        
+        meme.curve_type = CurveType::Linear;
+        meme.initial_price = 1_000;
+        meme.current_price = 1_000;
+        
+        // No upfront creator allocation - fair launch
+        meme.creator_allocation = 0;
+        meme.creator_fee_bps = 50; // 0.5% creator fee on all trades
+        meme.creator_fees_earned = 0;
+
+        protocol.total_memes_created += 1;
+
+        msg!("Meme token created");
+        msg!("Image hash: {:?}", image_hash);
+        msg!("Fair launch - 0% creator allocation");
+        msg!("Creator earns 0.5% on all trades");
+
+        Ok(())
+    }
+
+    pub fn buy_tokens(
+        ctx: Context<BuyTokens>,
+        amount: u64,
+        max_sol_cost: u64,
+    ) -> Result<()> {
+        let meme = &mut ctx.accounts.meme;
+        require!(!meme.is_graduated, ErrorCode::AlreadyGraduated);
+        
+        let protocol = &ctx.accounts.protocol;
+        
+        let (sol_cost, new_price) = calculate_buy_cost(
+            amount,
+            meme.circulating_supply,
+            meme.current_price,
+            &meme.curve_type,
+        )?;
+        
+        require!(sol_cost <= max_sol_cost, ErrorCode::SlippageExceeded);
+        
+        // Calculate fees
+        let protocol_fee = (sol_cost * protocol.protocol_fee_bps as u64) / 10000;
+        let creator_fee = (sol_cost * meme.creator_fee_bps as u64) / 10000;
+        let total_fees = protocol_fee + creator_fee;
+        let net_cost = sol_cost - total_fees;
+        
+        // Transfer to bonding curve vault
+        let transfer_ctx = CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.buyer.to_account_info(),
+                to: ctx.accounts.bonding_curve_vault.to_account_info(),
+            },
+        );
+        anchor_lang::system_program::transfer(transfer_ctx, net_cost)?;
+        
+        // Transfer protocol fee
+        let fee_transfer_ctx = CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.buyer.to_account_info(),
+                to: ctx.accounts.fee_recipient.to_account_info(),
+            },
+        );
+        anchor_lang::system_program::transfer(fee_transfer_ctx, protocol_fee)?;
+        
+        // Transfer creator fee
+        let creator_fee_transfer_ctx = CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.buyer.to_account_info(),
+                to: ctx.accounts.creator.to_account_info(),
+            },
+        );
+        anchor_lang::system_program::transfer(creator_fee_transfer_ctx, creator_fee)?;
+        
+        // Mint tokens to buyer
+        let meme_key = meme.key();
+        let mint_bump = ctx.bumps.mint;
+        let seeds = &[
+            b"mint".as_ref(),
+            meme_key.as_ref(),
+            &[mint_bump],
+        ];
+        let signer = &[&seeds[..]];
+        
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.mint.to_account_info(),
+            to: ctx.accounts.buyer_token_account.to_account_info(),
+            authority: ctx.accounts.mint.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts,
+            signer,
+        );
+        token::mint_to(cpi_ctx, amount)?;
+        
+        // Update meme state
+        meme.circulating_supply += amount;
+        meme.bonding_curve_supply -= amount;
+        meme.current_price = new_price;
+        meme.total_volume += sol_cost;
+        meme.creator_fees_earned += creator_fee;
+        
+        if meme.circulating_supply >= protocol.graduation_threshold {
+            meme.is_graduated = true;
+            msg!("Meme graduated");
+        }
+        
+        msg!("Bought {} for {}", amount, sol_cost);
+        
+        Ok(())
+    }
+
+    pub fn sell_tokens(
+        ctx: Context<SellTokens>,
+        amount: u64,
+        min_sol_return: u64,
+    ) -> Result<()> {
+        let meme = &mut ctx.accounts.meme;
+        require!(!meme.is_graduated, ErrorCode::AlreadyGraduated);
+        
+        let protocol = &ctx.accounts.protocol;
+        
+        let (sol_return, new_price) = calculate_sell_return(
+            amount,
+            meme.circulating_supply,
+            meme.current_price,
+            &meme.curve_type,
+        )?;
+        
+        require!(sol_return >= min_sol_return, ErrorCode::SlippageExceeded);
+        
+        // Calculate fees
+        let protocol_fee = (sol_return * protocol.protocol_fee_bps as u64) / 10000;
+        let creator_fee = (sol_return * meme.creator_fee_bps as u64) / 10000;
+        let total_fees = protocol_fee + creator_fee;
+        let net_return = sol_return - total_fees;
+        
+        // Burn seller's tokens
+        let cpi_accounts = token::Burn {
+            mint: ctx.accounts.mint.to_account_info(),
+            from: ctx.accounts.seller_token_account.to_account_info(),
+            authority: ctx.accounts.seller.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts,
+        );
+        token::burn(cpi_ctx, amount)?;
+        
+        // Transfer net return to seller
+        **ctx.accounts.bonding_curve_vault.to_account_info().try_borrow_mut_lamports()? -= net_return;
+        **ctx.accounts.seller.to_account_info().try_borrow_mut_lamports()? += net_return;
+        
+        // Transfer protocol fee
+        **ctx.accounts.bonding_curve_vault.to_account_info().try_borrow_mut_lamports()? -= protocol_fee;
+        **ctx.accounts.fee_recipient.to_account_info().try_borrow_mut_lamports()? += protocol_fee;
+        
+        // Transfer creator fee
+        **ctx.accounts.bonding_curve_vault.to_account_info().try_borrow_mut_lamports()? -= creator_fee;
+        **ctx.accounts.creator.to_account_info().try_borrow_mut_lamports()? += creator_fee;
+        
+        // Update meme state
+        meme.circulating_supply -= amount;
+        meme.bonding_curve_supply += amount;
+        meme.current_price = new_price;
+        meme.total_volume += sol_return;
+        meme.creator_fees_earned += creator_fee;
+        
+        msg!("Sold {} for {}", amount, sol_return);
+        
+        Ok(())
+    }
+
+    pub fn migrate_to_amm(
+        ctx: Context<MigrateToAmm>,
+        amm_type: AmmType,
+    ) -> Result<()> {
+        let meme = &mut ctx.accounts.meme;
+        require!(meme.is_graduated, ErrorCode::NotGraduated);
+        require!(!meme.amm_migrated, ErrorCode::AlreadyMigrated);
+        
+        meme.amm_migrated = true;
+        meme.amm_type = Some(amm_type);
+        
+        msg!("Token migrated");
+        
+        Ok(())
+    }
+}
+
+fn calculate_buy_cost(
+    amount: u64,
+    _current_supply: u64,
+    current_price: u64,
+    curve_type: &CurveType,
+) -> Result<(u64, u64)> {
+    match curve_type {
+        CurveType::Linear => {
+            let avg_price = current_price + (amount / 2);
+            let cost = amount * avg_price;
+            let new_price = current_price + amount;
+            Ok((cost, new_price))
+        }
+    }
+}
+
+fn calculate_sell_return(
+    amount: u64,
+    _current_supply: u64,
+    current_price: u64,
+    curve_type: &CurveType,
+) -> Result<(u64, u64)> {
+    match curve_type {
+        CurveType::Linear => {
+            let avg_price = current_price.saturating_sub(amount / 2);
+            let return_amount = amount * avg_price;
+            let new_price = current_price.saturating_sub(amount);
+            Ok((return_amount, new_price))
+        }
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializeProtocol<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Protocol::SIZE,
+        seeds = [b"protocol"],
+        bump
+    )]
+    pub protocol: Account<'info, Protocol>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    /// CHECK: Fee recipient
+    pub fee_recipient: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(name: String, symbol: String)]
+pub struct CreateMemeToken<'info> {
+    #[account(mut)]
+    pub protocol: Account<'info, Protocol>,
+    
+    #[account(
+        init,
+        payer = creator,
+        space = 8 + MemeToken::SIZE,
+        seeds = [b"meme", creator.key().as_ref(), symbol.as_bytes()],
+        bump
+    )]
+    pub meme: Account<'info, MemeToken>,
+    
+    #[account(
+        init,
+        payer = creator,
+        mint::decimals = 9,
+        mint::authority = mint,
+        seeds = [b"mint", meme.key().as_ref()],
+        bump
+    )]
+    pub mint: Account<'info, Mint>,
+    
+    #[account(
+        init_if_needed,
+        payer = creator,
+        associated_token::mint = mint,
+        associated_token::authority = creator,
+    )]
+    pub creator_token_account: Account<'info, TokenAccount>,
+    
+    #[account(
+        init,
+        payer = creator,
+        space = 0,
+        seeds = [b"vault", meme.key().as_ref()],
+        bump
+    )]
+    /// CHECK: Vault
+    pub bonding_curve_vault: AccountInfo<'info>,
+    
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct BuyTokens<'info> {
+    #[account(mut)]
+    pub protocol: Account<'info, Protocol>,
+    
+    #[account(mut)]
+    pub meme: Account<'info, MemeToken>,
+    
+    #[account(
+        mut,
+        seeds = [b"mint", meme.key().as_ref()],
+        bump
+    )]
+    pub mint: Account<'info, Mint>,
+    
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = mint,
+        associated_token::authority = buyer,
+    )]
+    pub buyer_token_account: Account<'info, TokenAccount>,
+    
+    #[account(
+        mut,
+        seeds = [b"vault", meme.key().as_ref()],
+        bump
+    )]
+    /// CHECK: Vault
+    pub bonding_curve_vault: AccountInfo<'info>,
+    
+    #[account(mut)]
+    pub buyer: Signer<'info>,
+    
+    #[account(mut)]
+    /// CHECK: Creator of this meme token
+    pub creator: AccountInfo<'info>,
+    
+    #[account(mut)]
+    /// CHECK: Protocol fee recipient
+    pub fee_recipient: AccountInfo<'info>,
+    
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SellTokens<'info> {
+    #[account(mut)]
+    pub protocol: Account<'info, Protocol>,
+    
+    #[account(mut)]
+    pub meme: Account<'info, MemeToken>,
+    
+    #[account(
+        mut,
+        seeds = [b"mint", meme.key().as_ref()],
+        bump
+    )]
+    pub mint: Account<'info, Mint>,
+    
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = seller,
+    )]
+    pub seller_token_account: Account<'info, TokenAccount>,
+    
+    #[account(
+        mut,
+        seeds = [b"vault", meme.key().as_ref()],
+        bump
+    )]
+    /// CHECK: Vault
+    pub bonding_curve_vault: AccountInfo<'info>,
+    
+    #[account(mut)]
+    pub seller: Signer<'info>,
+    
+    #[account(mut)]
+    /// CHECK: Creator of this meme token
+    pub creator: AccountInfo<'info>,
+    
+    #[account(mut)]
+    /// CHECK: Protocol fee recipient
+    pub fee_recipient: AccountInfo<'info>,
+    
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateToAmm<'info> {
+    #[account(mut)]
+    pub meme: Account<'info, MemeToken>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+}
+
+#[account]
+pub struct Protocol {
+    pub authority: Pubkey,
+    pub fee_recipient: Pubkey,
+    pub protocol_fee_bps: u16,
+    pub creation_fee_lamports: u64,
+    pub graduation_threshold: u64,
+    pub total_memes_created: u64,
+    pub total_volume: u64,
+}
+
+impl Protocol {
+    pub const SIZE: usize = 32 + 32 + 2 + 8 + 8 + 8 + 8;
+}
+
+#[account]
+pub struct MemeToken {
+    pub creator: Pubkey,
+    pub mint: Pubkey,
+    pub name: String,
+    pub symbol: String,
+    pub uri: String,
+    pub image_hash: [u8; 32],
+    pub created_at: i64,
+    pub total_supply: u64,
+    pub circulating_supply: u64,
+    pub bonding_curve_supply: u64,
+    pub is_graduated: bool,
+    pub amm_migrated: bool,
+    pub amm_type: Option<AmmType>,
+    pub total_volume: u64,
+    pub holders_count: u32,
+    pub curve_type: CurveType,
+    pub initial_price: u64,
+    pub current_price: u64,
+    pub creator_allocation: u64,
+    pub creator_fee_bps: u16,
+    pub creator_fees_earned: u64,
+}
+
+impl MemeToken {
+    pub const SIZE: usize = 32 + 32 + (4 + 32) + (4 + 10) + (4 + 200) + 32 + 8 + 8 + 8 + 8 + 1 + 1 + (1 + 1) + 8 + 4 + 1 + 8 + 8 + 8 + 2 + 8;
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum CurveType {
+    Linear,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum AmmType {
+    Raydium,
+    Orca,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Name too long")]
+    NameTooLong,
+    #[msg("Symbol too long")]
+    SymbolTooLong,
+    #[msg("URI too long")]
+    UriTooLong,
+    #[msg("Already graduated")]
+    AlreadyGraduated,
+    #[msg("Not graduated")]
+    NotGraduated,
+    #[msg("Already migrated")]
+    AlreadyMigrated,
+    #[msg("Slippage exceeded")]
+    SlippageExceeded,
+    #[msg("Duplicate meme")]
+    DuplicateMeme,
+}

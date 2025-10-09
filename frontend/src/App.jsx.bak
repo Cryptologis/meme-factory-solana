@@ -1,0 +1,646 @@
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
+
+import React, { useState, useMemo } from 'react';
+import { ConnectionProvider, WalletProvider, useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { clusterApiUrl } from '@solana/web3.js';
+import { createMemeTokenTransaction } from './createTokenTx';
+import { TrendingMemes } from './TrendingMemes';
+import '@solana/wallet-adapter-react-ui/styles.css';
+
+function LiveStats() {
+  return (
+    <div style={{ 
+      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
+      border: '1px solid rgba(139, 92, 246, 0.3)',
+      borderRadius: '20px', 
+      padding: '24px',
+      backdropFilter: 'blur(10px)',
+      marginBottom: '24px'
+    }}>
+      <h3 style={{ 
+        color: 'white', 
+        fontSize: '20px', 
+        fontWeight: '800', 
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        📊 Live Stats
+      </h3>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ 
+          background: 'rgba(31, 41, 55, 0.6)',
+          padding: '16px',
+          borderRadius: '12px',
+          border: '1px solid rgba(139, 92, 246, 0.2)'
+        }}>
+          <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '4px', fontWeight: '600' }}>
+            Tokens Created Today
+          </div>
+          <div style={{ 
+            color: 'white', 
+            fontSize: '28px', 
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            247
+          </div>
+        </div>
+
+        <div style={{ 
+          background: 'rgba(31, 41, 55, 0.6)',
+          padding: '16px',
+          borderRadius: '12px',
+          border: '1px solid rgba(139, 92, 246, 0.2)'
+        }}>
+          <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '4px', fontWeight: '600' }}>
+            24h Volume
+          </div>
+          <div style={{ 
+            color: 'white', 
+            fontSize: '28px', 
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+            $1.2M
+          </div>
+        </div>
+
+        <div style={{ 
+          background: 'rgba(31, 41, 55, 0.6)',
+          padding: '16px',
+          borderRadius: '12px',
+          border: '1px solid rgba(139, 92, 246, 0.2)'
+        }}>
+          <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '4px', fontWeight: '600' }}>
+            🔥 Hottest Token
+          </div>
+          <div style={{ color: 'white', fontSize: '18px', fontWeight: '700' }}>
+            PEPE2.0
+          </div>
+          <div style={{ color: '#10b981', fontSize: '14px', fontWeight: '600' }}>
+            +2,847% 🚀
+          </div>
+        </div>
+
+        <div style={{ 
+          background: 'rgba(31, 41, 55, 0.6)',
+          padding: '16px',
+          borderRadius: '12px',
+          border: '1px solid rgba(139, 92, 246, 0.2)'
+        }}>
+          <div style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '4px', fontWeight: '600' }}>
+            Active Users
+          </div>
+          <div style={{ 
+            color: 'white', 
+            fontSize: '28px', 
+            fontWeight: '800'
+          }}>
+            1,847
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Leaderboard() {
+  const topTokens = [
+    { rank: 1, name: 'PEPE2.0', symbol: 'PEPE', volume: '$847K', change: '+2847%', emoji: '🐸', address: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU' },
+    { rank: 2, name: 'Moon Doge', symbol: 'MDOGE', volume: '$623K', change: '+1289%', emoji: '🌙', address: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM' },
+    { rank: 3, name: 'Diamond Hands', symbol: 'DIAM', volume: '$512K', change: '+891%', emoji: '💎', address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263' },
+    { rank: 4, name: 'Rocket Fuel', symbol: 'FUEL', volume: '$398K', change: '+654%', emoji: '🚀', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB' },
+    { rank: 5, name: 'Wen Lambo', symbol: 'LAMBO', volume: '$287K', change: '+432%', emoji: '🏎️', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
+  ];
+
+  return (
+    <div style={{ 
+      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
+      border: '1px solid rgba(139, 92, 246, 0.3)',
+      borderRadius: '20px', 
+      padding: '24px',
+      backdropFilter: 'blur(10px)'
+    }}>
+      <h3 style={{ 
+        color: 'white', 
+        fontSize: '20px', 
+        fontWeight: '800', 
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        🏆 Top Performers
+      </h3>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {topTokens.map((token) => (
+          <div 
+            key={token.rank}
+            style={{ 
+              background: 'rgba(31, 41, 55, 0.6)',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateX(4px)';
+              e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateX(0)';
+              e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.2)';
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  fontSize: '24px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: token.rank === 1 ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' :
+                              token.rank === 2 ? 'linear-gradient(135deg, #d1d5db, #9ca3af)' :
+                              token.rank === 3 ? 'linear-gradient(135deg, #cd7f32, #8b4513)' :
+                              'rgba(139, 92, 246, 0.2)',
+                  borderRadius: '8px',
+                  fontWeight: '800',
+                  fontSize: '14px',
+                  color: token.rank <= 3 ? '#111827' : 'white'
+                }}>
+                  {token.rank}
+                </div>
+                <div style={{ fontSize: '24px' }}>{token.emoji}</div>
+                <div>
+                  <div style={{ color: 'white', fontSize: '15px', fontWeight: '700' }}>
+                    {token.symbol}
+                  </div>
+                  <div style={{ color: '#9ca3af', fontSize: '12px' }}>
+                    {token.name}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: 'white', fontSize: '15px', fontWeight: '700' }}>
+                  {token.volume}
+                </div>
+                <div style={{ 
+                  color: '#10b981', 
+                  fontSize: '13px', 
+                  fontWeight: '600'
+                }}>
+                  {token.change}
+                </div>
+              </div>
+            </div>
+            
+            
+              href={`https://solscan.io/token/${token.address}?cluster=devnet`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block',
+                padding: '8px',
+                background: 'rgba(168, 85, 247, 0.2)',
+                borderRadius: '8px',
+                textAlign: 'center',
+                color: '#a855f7',
+                fontSize: '12px',
+                fontWeight: '700',
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(168, 85, 247, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(168, 85, 247, 0.2)';
+              }}
+            >
+              View on Solscan
+            </a>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ 
+        marginTop: '16px',
+        padding: '12px',
+        background: 'rgba(168, 85, 247, 0.1)',
+        borderRadius: '12px',
+        textAlign: 'center'
+      }}>
+        <button style={{
+          background: 'transparent',
+          border: 'none',
+          color: '#a855f7',
+          fontSize: '14px',
+          fontWeight: '700',
+          cursor: 'pointer',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          View All Tokens
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DashboardContent() {
+  const { connection } = useConnection();
+  const wallet = useWallet();
+  const [tokenName, setTokenName] = useState('');
+  const [tokenSymbol, setTokenSymbol] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [lastCreatedToken, setLastCreatedToken] = useState(null);
+  
+  const handleCreateFromMeme = (meme) => {
+    const cleanTitle = meme.title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    const words = cleanTitle.split(' ');
+    const suggestedSymbol = words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
+    
+    setTokenName(cleanTitle.slice(0, 32));
+    setTokenSymbol(suggestedSymbol.slice(0, 10));
+    
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
+  };
+  
+  const createToken = async () => {
+    if (!tokenName || !tokenSymbol) {
+      alert('Please fill in both token name and symbol');
+      return;
+    }
+    
+    setCreating(true);
+    
+    try {
+      const mockImageData = new TextEncoder().encode(tokenName + tokenSymbol + Date.now());
+      const imageHashBuffer = await crypto.subtle.digest('SHA-256', mockImageData);
+      const imageHash = Array.from(new Uint8Array(imageHashBuffer));
+      const metadataUri = `https://mock-metadata.com/${tokenSymbol.toLowerCase()}`;
+      
+      console.log('Creating token...', { tokenName, tokenSymbol });
+      
+      const { transaction, mintPDA } = await createMemeTokenTransaction(
+        connection,
+        wallet,
+        tokenName,
+        tokenSymbol,
+        metadataUri,
+        imageHash
+      );
+      
+      console.log('Transaction created:', transaction);
+      console.log('Sending transaction...');
+      
+      const signature = await wallet.sendTransaction(transaction, connection, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed'
+      });
+      
+      console.log('Transaction sent:', signature);
+      console.log('Confirming...');
+      
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      setLastCreatedToken({ signature, mint: mintPDA.toString(), symbol: tokenSymbol });
+      
+      alert(`Success! Token "${tokenSymbol}" created!\n\nTransaction: ${signature}\n\nMint: ${mintPDA.toString()}\n\nYou received tokens!\n\nView on Solscan (link below)`);
+      
+      setTokenName('');
+      setTokenSymbol('');
+    } catch (error) {
+      console.error('Full error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error logs:', error.logs);
+      alert(`Error: ${error.message}\n\nCheck console for details`);
+    } finally {
+      setCreating(false);
+    }
+  };
+  
+  if (!wallet.connected) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        textAlign: 'center'
+      }}>
+        <div>
+          <div style={{ 
+            fontSize: '80px', 
+            marginBottom: '24px'
+          }}>
+            🚀
+          </div>
+          <h1 style={{ 
+            fontSize: '48px', 
+            fontWeight: '900', 
+            background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '16px',
+            letterSpacing: '-1px'
+          }}>
+            MEME FACTORY
+          </h1>
+          <p style={{ 
+            color: '#9ca3af', 
+            marginBottom: '40px',
+            fontSize: '18px',
+            fontWeight: '500'
+          }}>
+            Launch viral meme tokens on Solana
+          </p>
+          <WalletMultiButton />
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div style={{ minHeight: '100vh', padding: '32px' }}>
+      <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '48px',
+          padding: '20px',
+          background: 'rgba(31, 41, 55, 0.5)',
+          borderRadius: '20px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(139, 92, 246, 0.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ fontSize: '40px' }}>🚀</div>
+            <h1 style={{ 
+              fontSize: '32px', 
+              fontWeight: '900', 
+              background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              margin: 0
+            }}>
+              MEME FACTORY
+            </h1>
+          </div>
+          <WalletMultiButton />
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
+          <div>
+            <TrendingMemes onCreateFromMeme={handleCreateFromMeme} />
+            
+            <div style={{ 
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '20px', 
+              padding: '40px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h2 style={{ 
+                color: 'white', 
+                fontSize: '28px', 
+                fontWeight: '800', 
+                marginBottom: '32px'
+              }}>
+                🎯 Launch Your Token
+              </h2>
+              
+              {lastCreatedToken && (
+                <div style={{
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '24px'
+                }}>
+                  <div style={{ color: '#10b981', fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>
+                    ✅ Token Created Successfully!
+                  </div>
+                  <div style={{ color: '#d1d5db', fontSize: '14px', marginBottom: '8px' }}>
+                    Symbol: <span style={{ color: 'white', fontWeight: '700' }}>{lastCreatedToken.symbol}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    
+                      href={`https://solscan.io/token/${lastCreatedToken.mint}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        background: 'rgba(168, 85, 247, 0.3)',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        color: '#a855f7',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        textDecoration: 'none',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      View Token
+                    </a>
+                    
+                      href={`https://solscan.io/tx/${lastCreatedToken.signature}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        background: 'rgba(16, 185, 129, 0.3)',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        color: '#10b981',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        textDecoration: 'none',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      View TX
+                    </a>
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    color: '#d1d5db', 
+                    marginBottom: '12px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Token Name
+                  </label>
+                  <input
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                    placeholder="Uptober Moon"
+                    disabled={creating}
+                    style={{ 
+                      width: '100%', 
+                      padding: '16px', 
+                      background: 'rgba(31, 41, 55, 0.8)',
+                      color: 'white', 
+                      borderRadius: '12px', 
+                      border: '1px solid rgba(139, 92, 246, 0.3)',
+                      fontSize: '16px',
+                      fontWeight: '500'
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    color: '#d1d5db', 
+                    marginBottom: '12px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Symbol
+                  </label>
+                  <input
+                    value={tokenSymbol}
+                    onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
+                    placeholder="MOON"
+                    maxLength="10"
+                    disabled={creating}
+                    style={{ 
+                      width: '100%', 
+                      padding: '16px', 
+                      background: 'rgba(31, 41, 55, 0.8)',
+                      color: 'white', 
+                      borderRadius: '12px', 
+                      border: '1px solid rgba(139, 92, 246, 0.3)',
+                      fontSize: '16px',
+                      fontWeight: '500'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ 
+                background: 'rgba(31, 41, 55, 0.6)',
+                padding: '24px', 
+                borderRadius: '16px', 
+                marginBottom: '32px',
+                border: '1px solid rgba(139, 92, 246, 0.2)'
+              }}>
+                <h3 style={{ 
+                  color: 'white', 
+                  fontSize: '18px', 
+                  fontWeight: '700', 
+                  marginBottom: '20px'
+                }}>
+                  🛡️ Fair Launch Details
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ 
+                    color: '#d1d5db', 
+                    fontSize: '15px', 
+                    lineHeight: '2',
+                    fontWeight: '500'
+                  }}>
+                    <div>💰 Total Supply: <span style={{ color: '#a855f7', fontWeight: '700' }}>1B tokens</span></div>
+                    <div>🎯 Creator Gets: <span style={{ color: '#10b981', fontWeight: '700' }}>0% upfront</span></div>
+                    <div>💵 Creator Fee: <span style={{ color: '#a855f7', fontWeight: '700' }}>0.5% per trade</span></div>
+                  </div>
+                  <div style={{ 
+                    color: '#d1d5db', 
+                    fontSize: '15px', 
+                    lineHeight: '2',
+                    fontWeight: '500'
+                  }}>
+                    <div>📈 Bonding Curve: <span style={{ color: '#a855f7', fontWeight: '700' }}>Linear</span></div>
+                    <div>🛡️ Protocol Fee: <span style={{ color: '#a855f7', fontWeight: '700' }}>1% per trade</span></div>
+                    <div>⚔️ Anti-PVP: <span style={{ color: '#10b981', fontWeight: '700' }}>Protected</span></div>
+                  </div>
+                </div>
+              </div>
+              
+              <button
+                onClick={createToken}
+                disabled={creating || !tokenName || !tokenSymbol}
+                style={{ 
+                  width: '100%', 
+                  padding: '20px', 
+                  background: creating ? 'rgba(107, 114, 128, 0.5)' : 'linear-gradient(135deg, #a855f7, #ec4899)', 
+                  color: 'white', 
+                  borderRadius: '16px', 
+                  fontWeight: '800', 
+                  border: 'none', 
+                  cursor: creating ? 'not-allowed' : 'pointer', 
+                  fontSize: '18px',
+                  opacity: (!tokenName || !tokenSymbol) ? 0.5 : 1,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  boxShadow: creating ? 'none' : '0 8px 24px rgba(168, 85, 247, 0.3)'
+                }}
+              >
+                {creating ? '⏳ Creating Token...' : '🚀 Launch Token to the Moon'}
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <LiveStats />
+            <Leaderboard />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const network = WalletAdapterNetwork.Devnet;
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
+  
+  return (
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          <div style={{ 
+            minHeight: '100vh', 
+            background: 'linear-gradient(180deg, #0f0f23 0%, #1a0b2e 50%, #160b28 100%)',
+            backgroundAttachment: 'fixed'
+          }}>
+            <DashboardContent />
+          </div>
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
+  );
+}

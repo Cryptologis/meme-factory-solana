@@ -1,0 +1,934 @@
+{
+  "address": "5mE8RwFEnMJ1Rs4bLM2VSrzMN8RSEJkf1vXb9VpAybvi",
+  "metadata": {
+    "name": "meme_chain",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "buy_tokens",
+      "discriminator": [
+        189,
+        21,
+        230,
+        133,
+        247,
+        2,
+        110,
+        42
+      ],
+      "accounts": [
+        {
+          "name": "protocol",
+          "writable": true
+        },
+        {
+          "name": "meme",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "meme"
+              }
+            ]
+          }
+        },
+        {
+          "name": "buyer_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "bonding_curve_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "meme"
+              }
+            ]
+          }
+        },
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fee_recipient",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "max_sol_cost",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_meme_token",
+      "discriminator": [
+        6,
+        42,
+        76,
+        101,
+        74,
+        125,
+        120,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "protocol",
+          "writable": true
+        },
+        {
+          "name": "meme",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "symbol"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "meme"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "bonding_curve_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "meme"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        },
+        {
+          "name": "image_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "initial_supply",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_protocol",
+      "discriminator": [
+        188,
+        233,
+        252,
+        106,
+        134,
+        146,
+        202,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "protocol",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fee_recipient"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "protocol_fee_bps",
+          "type": "u16"
+        },
+        {
+          "name": "creation_fee_lamports",
+          "type": "u64"
+        },
+        {
+          "name": "graduation_threshold",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "migrate_to_amm",
+      "discriminator": [
+        207,
+        82,
+        192,
+        145,
+        254,
+        207,
+        145,
+        223
+      ],
+      "accounts": [
+        {
+          "name": "meme",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amm_type",
+          "type": {
+            "defined": {
+              "name": "AmmType"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "sell_tokens",
+      "discriminator": [
+        114,
+        242,
+        25,
+        12,
+        62,
+        126,
+        92,
+        2
+      ],
+      "accounts": [
+        {
+          "name": "protocol",
+          "writable": true
+        },
+        {
+          "name": "meme",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "meme"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "bonding_curve_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "meme"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fee_recipient",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_sol_return",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MemeToken",
+      "discriminator": [
+        38,
+        238,
+        9,
+        216,
+        223,
+        10,
+        110,
+        48
+      ]
+    },
+    {
+      "name": "Protocol",
+      "discriminator": [
+        45,
+        39,
+        101,
+        43,
+        115,
+        72,
+        131,
+        40
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NameTooLong",
+      "msg": "Name too long"
+    },
+    {
+      "code": 6001,
+      "name": "SymbolTooLong",
+      "msg": "Symbol too long"
+    },
+    {
+      "code": 6002,
+      "name": "UriTooLong",
+      "msg": "URI too long"
+    },
+    {
+      "code": 6003,
+      "name": "AlreadyGraduated",
+      "msg": "Already graduated"
+    },
+    {
+      "code": 6004,
+      "name": "NotGraduated",
+      "msg": "Not graduated"
+    },
+    {
+      "code": 6005,
+      "name": "AlreadyMigrated",
+      "msg": "Already migrated"
+    },
+    {
+      "code": 6006,
+      "name": "SlippageExceeded",
+      "msg": "Slippage exceeded"
+    },
+    {
+      "code": 6007,
+      "name": "DuplicateMeme",
+      "msg": "Duplicate meme"
+    }
+  ],
+  "types": [
+    {
+      "name": "AmmType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Raydium"
+          },
+          {
+            "name": "Orca"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CurveType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Linear"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MemeToken",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "image_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "circulating_supply",
+            "type": "u64"
+          },
+          {
+            "name": "bonding_curve_supply",
+            "type": "u64"
+          },
+          {
+            "name": "is_graduated",
+            "type": "bool"
+          },
+          {
+            "name": "amm_migrated",
+            "type": "bool"
+          },
+          {
+            "name": "amm_type",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "AmmType"
+                }
+              }
+            }
+          },
+          {
+            "name": "total_volume",
+            "type": "u64"
+          },
+          {
+            "name": "holders_count",
+            "type": "u32"
+          },
+          {
+            "name": "curve_type",
+            "type": {
+              "defined": {
+                "name": "CurveType"
+              }
+            }
+          },
+          {
+            "name": "initial_price",
+            "type": "u64"
+          },
+          {
+            "name": "current_price",
+            "type": "u64"
+          },
+          {
+            "name": "creator_allocation",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Protocol",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "creation_fee_lamports",
+            "type": "u64"
+          },
+          {
+            "name": "graduation_threshold",
+            "type": "u64"
+          },
+          {
+            "name": "total_memes_created",
+            "type": "u64"
+          },
+          {
+            "name": "total_volume",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
