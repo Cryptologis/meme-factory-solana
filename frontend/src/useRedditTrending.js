@@ -8,7 +8,7 @@ export function useRedditTrending() {
   useEffect(() => {
     async function fetchTrending() {
       try {
-        const response = await fetch('https://preperitoneal-asher-prognathous.ngrok-free.app/api/trending');
+        const response = await fetch('https://meme-factory-solana.onrender.com/api/trending');
         const data = await response.json();
         
         if (data.success) {
