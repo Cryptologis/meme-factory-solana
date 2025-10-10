@@ -20,7 +20,7 @@ function DashboardContent() {
   const [lastCreatedToken, setLastCreatedToken] = useState(null);
   
   const handleCreateFromMeme = (meme) => {
-    if (false) {
+    if (!wallet.connected) {
       alert('Please connect your wallet first to create a token!');
       return;
     }
