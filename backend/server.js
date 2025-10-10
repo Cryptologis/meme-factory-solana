@@ -282,3 +282,41 @@ app.listen(PORT, () => {
   console.log(`📊 Monitoring subreddits: ${MEME_SUBREDDITS.join(', ')}`);
   console.log(`🔄 Cache refresh: every ${CACHE_DURATION / 1000 / 60} minutes`);
 });
+
+// YouTube trending videos endpoint
+const { google } = require('googleapis');
+const youtube = google.youtube('v3');
+
+app.get('/api/youtube/trending', async (req, res) => {
+  try {
+    const response = await youtube.videos.list({
+      key: process.env.YOUTUBE_API_KEY,
+      part: 'snippet,statistics',
+      chart: 'mostPopular',
+      regionCode: 'US',
+      maxResults: 10,
+      videoCategoryId: '24' // Entertainment category
+    });
+
+    const videos = response.data.items.map(video => ({
+      id: video.id,
+      title: video.snippet.title,
+      channel: video.snippet.channelTitle,
+      thumbnail: video.snippet.thumbnails.medium.url,
+      views: parseInt(video.statistics.viewCount),
+      url: `https://youtube.com/watch?v=${video.id}`,
+      publishedAt: video.snippet.publishedAt
+    }));
+
+    res.json({
+      success: true,
+      data: videos
+    });
+  } catch (error) {
+    console.error('YouTube API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch YouTube trending'
+    });
+  }
+});
