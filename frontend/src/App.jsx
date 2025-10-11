@@ -9,7 +9,6 @@ import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-r
 import { clusterApiUrl } from '@solana/web3.js';
 import { createMemeTokenTransaction } from './createTokenTx';
 import { TrendingMemes } from './TrendingMemes';
-import { YouTubeTrending } from './YouTubeTrending';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 function DashboardContent() {
@@ -103,7 +102,6 @@ function DashboardContent() {
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '32px' }}>
             <TrendingMemes onCreateFromMeme={handleCreateFromMeme} />
-            <YouTubeTrending />
           </div>
         </div>
       </div>
@@ -223,7 +221,6 @@ function DashboardContent() {
             </div>
           </div>
           
-          <YouTubeTrending />
         </div>
       </div>
     </div>
