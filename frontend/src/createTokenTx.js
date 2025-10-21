@@ -7,25 +7,30 @@ const PROGRAM_ID = new PublicKey('5mE8RwFEnMJ1Rs4bLM2VSrzMN8RSEJkf1vXb9VpAybvi')
 
 const CREATE_MEME_TOKEN_DISCRIMINATOR = Buffer.from([6, 42, 76, 101, 74, 125, 120, 59]);
 
-function serializeCreateMemeTokenArgs(name, symbol, uri, imageHash, initialSupply) {
+function serializeCreateMemeTokenArgs(name, symbol, uri, imageHash, virtualSolReserves, virtualTokenReserves) {
   const nameBytes = Buffer.from(name, 'utf8');
   const symbolBytes = Buffer.from(symbol, 'utf8');
   const uriBytes = Buffer.from(uri, 'utf8');
-  
+
   const nameLen = Buffer.alloc(4);
   nameLen.writeUInt32LE(nameBytes.length);
-  
+
   const symbolLen = Buffer.alloc(4);
   symbolLen.writeUInt32LE(symbolBytes.length);
-  
+
   const uriLen = Buffer.alloc(4);
   uriLen.writeUInt32LE(uriBytes.length);
-  
+
   const imageHashBuffer = Buffer.from(imageHash);
-  
-  const supplyBN = new BN(initialSupply);
-  const supplyBuffer = supplyBN.toArrayLike(Buffer, 'le', 8);
-  
+
+  // Serialize virtual SOL reserves (u64)
+  const virtualSolBN = new BN(virtualSolReserves);
+  const virtualSolBuffer = virtualSolBN.toArrayLike(Buffer, 'le', 8);
+
+  // Serialize virtual token reserves (u64)
+  const virtualTokenBN = new BN(virtualTokenReserves);
+  const virtualTokenBuffer = virtualTokenBN.toArrayLike(Buffer, 'le', 8);
+
   return Buffer.concat([
     CREATE_MEME_TOKEN_DISCRIMINATOR,
     nameLen,
@@ -35,7 +40,8 @@ function serializeCreateMemeTokenArgs(name, symbol, uri, imageHash, initialSuppl
     uriLen,
     uriBytes,
     imageHashBuffer,
-    supplyBuffer
+    virtualSolBuffer,
+    virtualTokenBuffer
   ]);
 }
 
@@ -71,13 +77,20 @@ export async function createMemeTokenTransaction(
     [wallet.publicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mintPDA.toBuffer()],
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
-  
+
+  // Pump.fun-style virtual reserves for bonding curve
+  // Virtual SOL: 30 SOL (creates initial pricing)
+  const VIRTUAL_SOL_RESERVES = 30_000_000_000; // 30 SOL in lamports
+  // Virtual Token: 1.073 billion tokens (with 9 decimals)
+  const VIRTUAL_TOKEN_RESERVES = 1_073_000_000_000_000_000n; // 1.073B tokens
+
   const data = serializeCreateMemeTokenArgs(
     tokenName,
     tokenSymbol,
     metadataUri,
     imageHash,
-    1000000000
+    VIRTUAL_SOL_RESERVES,
+    VIRTUAL_TOKEN_RESERVES.toString()
   );
   
   const keys = [
