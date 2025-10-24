@@ -9,15 +9,7 @@ const DECIMALS: u8 = 9;
 const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
 const TOKEN_MULTIPLIER: u64 = 1_000_000_000; // 10^9 for 9 decimals
 const BASIS_POINTS: u64 = 10_000;
-
-// Anti-Bundler Protection: Progressive wallet limits
-const MAX_WALLET_LAUNCH_BPS: u16 = 50;  // 0.5% max during launch (first 15 min)
-const MAX_WALLET_NORMAL_BPS: u16 = 200;  // 2% max after launch period
-const LAUNCH_PERIOD_SECONDS: i64 = 900;  // 15 minutes
-
-// Anti-Bot Protection: Cooldowns
-const TRADE_COOLDOWN_SECONDS: i64 = 1;   // 1 second between trades
-const LAUNCH_COOLDOWN_SECONDS: i64 = 60; // 60 second cooldown after token creation
+const MAX_WALLET_BPS: u16 = 200; // 2% max per wallet
 
 #[program]
 pub mod meme_chain {
@@ -55,16 +47,10 @@ pub mod meme_chain {
         initial_virtual_token_reserves: u64,
     ) -> Result<()> {
         require!(name.len() <= 32, ErrorCode::NameTooLong);
-        require!(name.len() >= 1, ErrorCode::NameTooShort);
         require!(symbol.len() <= 10, ErrorCode::SymbolTooLong);
-        require!(symbol.len() >= 1, ErrorCode::SymbolTooShort);
         require!(uri.len() <= 200, ErrorCode::UriTooLong);
         require!(initial_virtual_sol_reserves > 0, ErrorCode::InvalidReserves);
         require!(initial_virtual_token_reserves > 0, ErrorCode::InvalidReserves);
-
-        // Anti-PVP: Check image hash is not all zeros (must be unique)
-        let is_zero_hash = image_hash.iter().all(|&b| b == 0);
-        require!(!is_zero_hash, ErrorCode::InvalidImageHash);
         
         let protocol = &mut ctx.accounts.protocol;
         let meme = &mut ctx.accounts.meme;
@@ -92,7 +78,7 @@ pub mod meme_chain {
         
         // Bonding curve parameters (Pump.fun style)
         meme.virtual_sol_reserves = initial_virtual_sol_reserves;
-        meme.virtual_token_reserves = initial_virtual_token_reserves;
+        meme.virtual_token_reserves = initial_virtual_token_reserves.checked_mul(TOKEN_MULTIPLIER).ok_or(ErrorCode::Overflow)?;
         meme.real_sol_reserves = 0;
         meme.real_token_reserves = total_supply;
         
@@ -129,17 +115,10 @@ pub mod meme_chain {
         require!(!meme.is_graduated, ErrorCode::AlreadyGraduated);
         require!(sol_amount > 0, ErrorCode::InvalidAmount);
         require!(max_slippage_bps <= 5000, ErrorCode::SlippageTooHigh); // Max 50%
-
-        // Anti-Bot: Launch cooldown (60 seconds after token creation before ANYONE can buy)
-        let time_since_creation = clock.unix_timestamp - meme.created_at;
+        
+        // Anti-bot: Rate limiting (1 second between trades)
         require!(
-            time_since_creation >= LAUNCH_COOLDOWN_SECONDS,
-            ErrorCode::LaunchCooldownActive
-        );
-
-        // Anti-Bot: Rate limiting (1 second between trades)
-        require!(
-            clock.unix_timestamp - meme.last_trade_timestamp >= TRADE_COOLDOWN_SECONDS,
+            clock.unix_timestamp - meme.last_trade_timestamp >= 1,
             ErrorCode::TradeTooFast
         );
         
@@ -149,30 +128,21 @@ pub mod meme_chain {
         
         // Slippage protection
         require!(tokens_out >= min_tokens_out, ErrorCode::SlippageExceeded);
-
-        // Anti-Bundler: Progressive wallet limits (0.5% during launch, 2% after)
-        let is_launch_period = time_since_creation < LAUNCH_PERIOD_SECONDS;
-        let max_wallet_bps = if is_launch_period {
-            MAX_WALLET_LAUNCH_BPS  // 0.5% during first 15 minutes
-        } else {
-            MAX_WALLET_NORMAL_BPS   // 2% after launch period
-        };
-
+        
+        // Check 2% max wallet limit
         let buyer_balance = ctx.accounts.buyer_token_account.amount;
         let new_balance = buyer_balance.checked_add(tokens_out)
             .ok_or(ErrorCode::Overflow)?;
-        let max_wallet_amount = meme.total_supply
-            .checked_mul(max_wallet_bps as u64)
-            .ok_or(ErrorCode::Overflow)?
-            .checked_div(BASIS_POINTS)
-            .ok_or(ErrorCode::Overflow)?;
-
+        let max_wallet_amount = ((meme.total_supply as u128)
+         .checked_mul(MAX_WALLET_BPS as u128)
+         .ok_or(ErrorCode::Overflow)?
+         .checked_div(BASIS_POINTS as u128)
+        .ok_or(ErrorCode::Overflow)?) as u64;
+        
         require!(
             new_balance <= max_wallet_amount,
             ErrorCode::MaxWalletExceeded
         );
-
-        msg!("Max wallet: {}% (launch period: {})", max_wallet_bps as f64 / 100.0, is_launch_period);
         
         let net_sol = sol_amount
             .checked_sub(protocol_fee_amount)
@@ -398,15 +368,31 @@ fn calculate_buy_amount(
         .checked_add(meme.real_token_reserves)
         .ok_or(ErrorCode::Overflow)?;
     
-    // Use u128 to prevent overflow
-    let numerator = (total_token_reserves as u128)
-        .checked_mul(sol_in as u128)
-        .ok_or(ErrorCode::Overflow)?;
-    let denominator = (total_sol_reserves as u128)
-        .checked_add(sol_in as u128)
+    // Use constant product formula: k = x * y
+    // Avoid overflow by rearranging: tokens_out = token_reserves - (k / new_sol_reserves)
+    let sol_reserves_u128 = total_sol_reserves as u128;
+    let token_reserves_u128 = total_token_reserves as u128;
+    let sol_in_u128 = sol_in as u128;
+    
+    // Calculate k (constant product)
+    let k = sol_reserves_u128
+        .checked_mul(token_reserves_u128)
         .ok_or(ErrorCode::Overflow)?;
     
-    let tokens_out = (numerator / denominator) as u64;
+    // New SOL reserves after adding input
+    let new_sol_reserves = sol_reserves_u128
+        .checked_add(sol_in_u128)
+        .ok_or(ErrorCode::Overflow)?;
+    
+    // Calculate new token reserves: new_token_reserves = k / new_sol_reserves
+    let new_token_reserves = k
+        .checked_div(new_sol_reserves)
+        .ok_or(ErrorCode::Overflow)?;
+    
+    // Tokens out = difference
+    let tokens_out = token_reserves_u128
+        .checked_sub(new_token_reserves)
+        .ok_or(ErrorCode::Overflow)? as u64;
     
     // Calculate fees
     let protocol_fee = sol_in
@@ -493,7 +479,7 @@ pub struct CreateMemeToken<'info> {
         init,
         payer = creator,
         space = 8 + MemeToken::SIZE,
-        seeds = [b"meme", symbol.as_bytes()],  // Anti-PVP: Globally unique symbol
+        seeds = [b"meme", creator.key().as_ref(), symbol.as_bytes()],
         bump
     )]
     pub meme: Account<'info, MemeToken>,
@@ -546,7 +532,7 @@ pub struct BuyTokens<'info> {
     
     #[account(
         mut,
-        seeds = [b"meme", meme.symbol.as_bytes()],  // Anti-PVP: Globally unique symbol
+        seeds = [b"meme", meme.creator.as_ref(), meme.symbol.as_bytes()],
         bump = meme.bump
     )]
     pub meme: Account<'info, MemeToken>,
@@ -601,7 +587,7 @@ pub struct SellTokens<'info> {
     
     #[account(
         mut,
-        seeds = [b"meme", meme.symbol.as_bytes()],  // Anti-PVP: Globally unique symbol
+        seeds = [b"meme", meme.creator.as_ref(), meme.symbol.as_bytes()],
         bump = meme.bump
     )]
     pub meme: Account<'info, MemeToken>,
@@ -710,12 +696,8 @@ pub enum AmmType {
 pub enum ErrorCode {
     #[msg("Name too long")]
     NameTooLong,
-    #[msg("Name too short")]
-    NameTooShort,
     #[msg("Symbol too long")]
     SymbolTooLong,
-    #[msg("Symbol too short")]
-    SymbolTooShort,
     #[msg("URI too long")]
     UriTooLong,
     #[msg("Already graduated")]
@@ -738,14 +720,10 @@ pub enum ErrorCode {
     FeeTooHigh,
     #[msg("Slippage tolerance too high")]
     SlippageTooHigh,
-    #[msg("Max wallet limit exceeded")]
+    #[msg("Max wallet limit exceeded (2% max)")]
     MaxWalletExceeded,
     #[msg("Trade too fast - wait 1 second")]
     TradeTooFast,
-    #[msg("Launch cooldown active - wait 60 seconds after token creation")]
-    LaunchCooldownActive,
-    #[msg("Invalid image hash")]
-    InvalidImageHash,
     #[msg("Unauthorized")]
     Unauthorized,
 }
