@@ -7,25 +7,30 @@ const PROGRAM_ID = new PublicKey('5mE8RwFEnMJ1Rs4bLM2VSrzMN8RSEJkf1vXb9VpAybvi')
 
 const CREATE_MEME_TOKEN_DISCRIMINATOR = Buffer.from([6, 42, 76, 101, 74, 125, 120, 59]);
 
-function serializeCreateMemeTokenArgs(name, symbol, uri, imageHash, initialSupply) {
+function serializeCreateMemeTokenArgs(name, symbol, uri, imageHash, virtualSolReserves, virtualTokenReserves) {
   const nameBytes = Buffer.from(name, 'utf8');
   const symbolBytes = Buffer.from(symbol, 'utf8');
   const uriBytes = Buffer.from(uri, 'utf8');
-  
+
   const nameLen = Buffer.alloc(4);
   nameLen.writeUInt32LE(nameBytes.length);
-  
+
   const symbolLen = Buffer.alloc(4);
   symbolLen.writeUInt32LE(symbolBytes.length);
-  
+
   const uriLen = Buffer.alloc(4);
   uriLen.writeUInt32LE(uriBytes.length);
-  
+
   const imageHashBuffer = Buffer.from(imageHash);
-  
-  const supplyBN = new BN(initialSupply);
-  const supplyBuffer = supplyBN.toArrayLike(Buffer, 'le', 8);
-  
+
+  // Serialize virtual SOL reserves (u64)
+  const solReservesBN = new BN(virtualSolReserves);
+  const solReservesBuffer = solReservesBN.toArrayLike(Buffer, 'le', 8);
+
+  // Serialize virtual token reserves (u64)
+  const tokenReservesBN = new BN(virtualTokenReserves);
+  const tokenReservesBuffer = tokenReservesBN.toArrayLike(Buffer, 'le', 8);
+
   return Buffer.concat([
     CREATE_MEME_TOKEN_DISCRIMINATOR,
     nameLen,
@@ -35,7 +40,8 @@ function serializeCreateMemeTokenArgs(name, symbol, uri, imageHash, initialSuppl
     uriLen,
     uriBytes,
     imageHashBuffer,
-    supplyBuffer
+    solReservesBuffer,
+    tokenReservesBuffer
   ]);
 }
 
@@ -72,12 +78,17 @@ export async function createMemeTokenTransaction(
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
   
+  // Virtual reserves for bonding curve (Pump.fun style)
+  const virtualSolReserves = "30000000000"; // 30 SOL in lamports
+  const virtualTokenReserves = "800000000000"; // 800K tokens with 6 decimals
+
   const data = serializeCreateMemeTokenArgs(
     tokenName,
     tokenSymbol,
     metadataUri,
     imageHash,
-    1000000000
+    virtualSolReserves,
+    virtualTokenReserves
   );
   
   const keys = [
