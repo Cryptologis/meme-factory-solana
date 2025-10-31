@@ -130,12 +130,17 @@ pub mod meme_chain {
         require!(sol_amount > 0, ErrorCode::InvalidAmount);
         require!(max_slippage_bps <= 5000, ErrorCode::SlippageTooHigh); // Max 50%
 
-        // Anti-Bot: Launch cooldown (60 seconds after token creation before ANYONE can buy)
+        // Anti-Bot: Launch cooldown (60 seconds after token creation - Creator can bypass for first buy)
         let time_since_creation = clock.unix_timestamp - meme.created_at;
-        require!(
-            time_since_creation >= LAUNCH_COOLDOWN_SECONDS,
-            ErrorCode::LaunchCooldownActive
-        );
+        let is_creator = ctx.accounts.buyer.key() == ctx.accounts.creator.key();
+
+        // Only enforce cooldown for non-creators
+        if !is_creator {
+            require!(
+                time_since_creation >= LAUNCH_COOLDOWN_SECONDS,
+                ErrorCode::LaunchCooldownActive
+            );
+        }
 
         // Anti-Bot: Rate limiting (1 second between trades)
         require!(
