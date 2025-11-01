@@ -1,10 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
+import idl from "../target/idl/meme_chain.json" assert { type: "json" };
 
 async function initialize() {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   
-  const program = anchor.workspace.MemeChainSolana;
+  const programId = new PublicKey("CRJDPpTp3aayKYZCaLEYntnpP3xvwbeTDYMdu18RtHwh");
+  const program = new anchor.Program(idl as any, programId, provider);
   
   try {
     const tx = await program.methods
@@ -16,9 +19,9 @@ async function initialize() {
       })
       .rpc();
     
-    console.log("Protocol initialized! TX:", tx);
+    console.log("✅ Protocol initialized! TX:", tx);
   } catch (err) {
-    console.error("Error:", err);
+    console.error("❌ Error:", err);
   }
 }
 
