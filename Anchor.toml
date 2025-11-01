@@ -6,4 +6,14 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-meme_chain_solana = "CRJDPpTp3aayKYZCaLEYntnpP3xvwbeTDYMdu18RtHwh"
+meme_chain_solana = "3HNNR5wUZxPpFUDfmHA9UEfDagN1i8bxMjtm8Hea5yPf"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
