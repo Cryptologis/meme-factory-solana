@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-meme_chain_solana = "FgKLBQuE6Ksctz4gjFk1BjiBCcUqmnYFy7986ecuNqLS"
+meme_chain_solana = "3HNNR5wUZxPpFUDfmHA9UEfDagN1i8bxMjtm8Hea5yPf"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,10 +16,10 @@ cluster = "devnet"
 wallet = "~/.config/solana/my-wallet.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-create-token = "npx ts-node scripts/create-test-token.ts"
 buy-tokens = "npx ts-node scripts/buy-tokens.ts"
-inspect-token = "npx ts-node scripts/inspect-token.ts"
-sell-tokens = "npx ts-node scripts/sell-tokens.ts"
 check-protocol = "npx ts-node scripts/check-protocol.ts"
+create-token = "npx ts-node scripts/create-test-token.ts"
+inspect-token = "npx ts-node scripts/inspect-token.ts"
 list-tokens = "npx ts-node scripts/list-my-tokens.ts"
+sell-tokens = "npx ts-node scripts/sell-tokens.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

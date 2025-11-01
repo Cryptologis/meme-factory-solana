@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, MintTo, Burn};
 use anchor_spl::associated_token::AssociatedToken;
 
-declare_id!("FgKLBQuE6Ksctz4gjFk1BjiBCcUqmnYFy7986ecuNqLS");
+declare_id!("3HNNR5wUZxPpFUDfmHA9UEfDagN1i8bxMjtm8Hea5yPf");
 
 // Constants for safer math
 const DECIMALS: u8 = 9;
