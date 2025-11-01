@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-meme_chain_solana = "3HNNR5wUZxPpFUDfmHA9UEfDagN1i8bxMjtm8Hea5yPf"
+meme_chain_solana = "CRJDPpTp3aayKYZCaLEYntnpP3xvwbeTDYMdu18RtHwh"
 
 [registry]
 url = "https://api.apr.dev"
