@@ -4,9 +4,8 @@ version = "0.1.0"
 description = "Anti-PVP/Anti-Bundling/Anti-Bot Launchpad for Solana Meme Tokens"
 edition = "2021"
 
-# NOTE: remove cdylib crate-type so the library builds as rlib for Anchor IDL generation
 [lib]
-crate-type = ["lib"]
+crate-type = ["cdylib", "lib"]
 name = "meme_chain_solana"
 
 [features]
@@ -15,8 +14,7 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"

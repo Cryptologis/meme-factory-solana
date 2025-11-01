@@ -71,8 +71,22 @@ function DashboardContent() {
       setTokenName('');
       setTokenSymbol('');
     } catch (error) {
-      console.error('Error:', error);
-      alert(`Error: ${error.message}`);
+      console.error('Create token error:', error);
+      console.error('Error message:', error.message);
+      if (error.logs) {
+        console.error('Transaction logs:', error.logs);
+      }
+
+      let errorMessage = error.message || 'Unknown error occurred';
+      if (error.logs && error.logs.length > 0) {
+        // Try to extract more meaningful error from logs
+        const relevantLog = error.logs.find(log => log.includes('Error:') || log.includes('failed'));
+        if (relevantLog) {
+          errorMessage += `\n${relevantLog}`;
+        }
+      }
+
+      alert(`Token creation failed:\n${errorMessage}`);
     } finally {
       setCreating(false);
     }
