@@ -3,7 +3,7 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, MintTo, Burn};
 use anchor_spl::associated_token::AssociatedToken;
 
 // IMPORTANT: Update this with your actual deployed program ID
-declare_id!("FgKLBQuE6Ksctz4gjFk1BjiBCcUqmnYFy7986ecuNqLS");
+declare_id!("CRJDPpTp3aayKYZCaLEYntnpP3xvwbeTDYMdu18RtHwh");
 
 // Constants for safer math
 const DECIMALS: u8 = 6;
