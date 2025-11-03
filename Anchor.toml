@@ -6,13 +6,13 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-meme_chain_solana = "3HNNR5wUZxPpFUDfmHA9UEfDagN1i8bxMjtm8Hea5yPf"
+meme_chain_solana = "JDmuP2KvxCfRi1biCd3LKJAuycx5pBuHF6WYVf9sGL7M"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

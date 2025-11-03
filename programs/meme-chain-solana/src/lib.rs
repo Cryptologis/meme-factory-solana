@@ -3,7 +3,7 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, MintTo, Burn};
 use anchor_spl::associated_token::AssociatedToken;
 
 // IMPORTANT: Update this with your actual deployed program ID
-declare_id!("3HNNR5wUZxPpFUDfmHA9UEfDagN1i8bxMjtm8Hea5yPf");
+declare_id!("JDmuP2KvxCfRi1biCd3LKJAuycx5pBuHF6WYVf9sGL7M");
 
 // Constants for safer math
 const DECIMALS: u8 = 6;
@@ -72,7 +72,7 @@ pub mod meme_chain {
         let clock = Clock::get()?;
 
         // Total supply: 1 billion tokens (with 6 decimals)
-        let total_supply = 1_000_000_000 * TOKEN_MULTIPLIER;
+        let total_supply = 1_000_000_000; // 1 billion tokens (10^9 with 6 decimals)
 
         meme.creator = ctx.accounts.creator.key();
         meme.mint = ctx.accounts.mint.key();
@@ -136,18 +136,19 @@ pub mod meme_chain {
             ErrorCode::LaunchCooldownActive
         );
         
-        // Calculate bonding curve math (constant product formula)
-        let k = meme.virtual_sol_reserves
-            .checked_mul(meme.virtual_token_reserves)
+        // Calculate bonding curve math (constant product formula) - FIXED OVERFLOW
+        // Use u128 to prevent overflow when multiplying large numbers
+        let k: u128 = (meme.virtual_sol_reserves as u128)
+            .checked_mul(meme.virtual_token_reserves as u128)
             .ok_or(ErrorCode::Overflow)?;
         
-        let new_sol_reserves = meme.virtual_sol_reserves
-            .checked_add(sol_amount)
+        let new_sol_reserves: u128 = (meme.virtual_sol_reserves as u128)
+            .checked_add(sol_amount as u128)
             .ok_or(ErrorCode::Overflow)?;
         
-        let new_token_reserves = k
+        let new_token_reserves: u64 = (k
             .checked_div(new_sol_reserves)
-            .ok_or(ErrorCode::InvalidAmount)?;
+            .ok_or(ErrorCode::InvalidAmount)?) as u64;
         
         let tokens_out = meme.virtual_token_reserves
             .checked_sub(new_token_reserves)
@@ -179,7 +180,7 @@ pub mod meme_chain {
         );
         
         // Update reserves
-        meme.virtual_sol_reserves = new_sol_reserves;
+        meme.virtual_sol_reserves = new_sol_reserves as u64;
         meme.virtual_token_reserves = new_token_reserves;
         meme.real_sol_reserves = meme.real_sol_reserves
             .checked_add(sol_amount)
@@ -317,18 +318,19 @@ pub mod meme_chain {
             ErrorCode::TradeTooFast
         );
         
-        // Calculate bonding curve math (constant product formula)
-        let k = meme.virtual_sol_reserves
-            .checked_mul(meme.virtual_token_reserves)
+        // Calculate bonding curve math (constant product formula) - FIXED OVERFLOW
+        // Use u128 to prevent overflow when multiplying large numbers
+        let k: u128 = (meme.virtual_sol_reserves as u128)
+            .checked_mul(meme.virtual_token_reserves as u128)
             .ok_or(ErrorCode::Overflow)?;
         
-        let new_token_reserves = meme.virtual_token_reserves
-            .checked_add(token_amount)
+        let new_token_reserves: u128 = (meme.virtual_token_reserves as u128)
+            .checked_add(token_amount as u128)
             .ok_or(ErrorCode::Overflow)?;
         
-        let new_sol_reserves = k
+        let new_sol_reserves: u64 = (k
             .checked_div(new_token_reserves)
-            .ok_or(ErrorCode::InvalidAmount)?;
+            .ok_or(ErrorCode::InvalidAmount)?) as u64;
         
         let sol_out = meme.virtual_sol_reserves
             .checked_sub(new_sol_reserves)
@@ -358,7 +360,7 @@ pub mod meme_chain {
         
         // Update reserves
         meme.virtual_sol_reserves = new_sol_reserves;
-        meme.virtual_token_reserves = new_token_reserves;
+        meme.virtual_token_reserves = new_token_reserves as u64;
         meme.real_sol_reserves = meme.real_sol_reserves
             .checked_sub(sol_out)
             .ok_or(ErrorCode::InsufficientFunds)?;

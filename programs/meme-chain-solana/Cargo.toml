@@ -6,7 +6,7 @@ edition = "2021"
 
 # NOTE: remove cdylib crate-type so the library builds as rlib for Anchor IDL generation
 [lib]
-crate-type = ["lib"]
+crate-type = ["cdylib", "lib"]
 name = "meme_chain_solana"
 
 [features]
