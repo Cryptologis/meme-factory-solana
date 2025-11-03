@@ -12,8 +12,8 @@ const TOKEN_MULTIPLIER: u64 = 1_000_000; // 10^6 for 6 decimals
 const BASIS_POINTS: u64 = 10_000;
 
 // Anti-Bundler Protection: Progressive wallet limits
-const MAX_WALLET_LAUNCH_BPS: u16 = 50;  // 0.5% max during launch (first 15 min)
-const MAX_WALLET_NORMAL_BPS: u16 = 200;  // 2% max after launch period
+const MAX_WALLET_LAUNCH_BPS: u16 = 500;  // 5% max during launch (first 15 min)
+const MAX_WALLET_NORMAL_BPS: u16 = 1000;  // 10% max after launch period
 const LAUNCH_PERIOD_SECONDS: i64 = 900;  // 15 minutes
 
 // Anti-Bot Protection: Cooldowns
