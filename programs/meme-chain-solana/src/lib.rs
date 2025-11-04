@@ -63,6 +63,13 @@ pub mod meme_chain {
         require!(initial_virtual_sol_reserves > 0, ErrorCode::InvalidReserves);
         require!(initial_virtual_token_reserves > 0, ErrorCode::InvalidReserves);
 
+        // Anti-PVP: Force UPPERCASE symbols to prevent case-variant duplicates
+        let symbol_uppercase = symbol.to_uppercase();
+        require!(symbol == symbol_uppercase, ErrorCode::SymbolMustBeUppercase);
+        
+        let name_uppercase = name.to_uppercase();
+        require!(name == name_uppercase, ErrorCode::NameMustBeUppercase);
+
         // Anti-PVP: Check image hash is not all zeros (must be unique)
         let is_zero_hash = image_hash.iter().all(|&b| b == 0);
         require!(!is_zero_hash, ErrorCode::InvalidImageHash);
@@ -679,6 +686,10 @@ pub enum ErrorCode {
     LaunchCooldownActive,
     #[msg("Invalid image hash")]
     InvalidImageHash,
+    #[msg("Symbol must be UPPERCASE (anti-PVP protection)")]
+    SymbolMustBeUppercase,
+    #[msg("Name must be UPPERCASE (anti-PVP protection)")]
+    NameMustBeUppercase,
     #[msg("Unauthorized")]
     Unauthorized,
     #[msg("Insufficient funds")]
