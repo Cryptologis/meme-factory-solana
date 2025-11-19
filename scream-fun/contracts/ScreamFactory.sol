@@ -64,6 +64,7 @@ contract ScreamFactory {
      * @param twitter Twitter handle (optional)
      * @param telegram Telegram link (optional)
      * @param website Website URL (optional)
+     * @param creatorAllocationBps Creator allocation in basis points (0-1000 = 0-10%)
      * @return token Address of created token
      * @return bondingCurve Address of bonding curve
      */
@@ -74,15 +75,20 @@ contract ScreamFactory {
         string memory description,
         string memory twitter,
         string memory telegram,
-        string memory website
+        string memory website,
+        uint256 creatorAllocationBps
     ) external returns (address token, address bondingCurve) {
+        require(creatorAllocationBps <= 1000, "Max 10% creator allocation");
+
         // Deploy bonding curve (which deploys the token)
         BondingCurve curve = new BondingCurve(
             devWallet,
             rageFund,
             uniswapFactory,
             name,
-            symbol
+            symbol,
+            msg.sender, // creator
+            creatorAllocationBps
         );
 
         bondingCurve = address(curve);

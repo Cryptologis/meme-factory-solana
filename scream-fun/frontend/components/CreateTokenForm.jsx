@@ -13,6 +13,7 @@ export default function CreateTokenForm({ onSuccess }) {
   const [website, setWebsite] = useState("");
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [creatorAllocation, setCreatorAllocation] = useState(0); // 0-10%
   const [creating, setCreating] = useState(false);
 
   function handleImageChange(e) {
@@ -76,6 +77,9 @@ export default function CreateTokenForm({ onSuccess }) {
         signer
       );
 
+      // Convert percentage to basis points (1% = 100 bps)
+      const creatorAllocationBps = Math.floor(creatorAllocation * 100);
+
       const tx = await factory.createToken(
         name,
         symbol,
@@ -83,7 +87,8 @@ export default function CreateTokenForm({ onSuccess }) {
         description,
         twitter,
         telegram,
-        website
+        website,
+        creatorAllocationBps
       );
       const receipt = await tx.wait();
 
@@ -184,6 +189,39 @@ export default function CreateTokenForm({ onSuccess }) {
             />
           </div>
         )}
+      </div>
+
+      <div className="space-y-3 pt-2 border-t border-gray-700">
+        <h3 className="text-sm font-semibold text-gray-300">Creator Allocation (optional)</h3>
+        <p className="text-xs text-gray-400">
+          Reserve tokens for yourself. 50% available immediately, 50% unlocks at migration.
+        </p>
+        <div>
+          <div className="flex justify-between mb-2">
+            <label className="text-sm text-gray-300">Allocation</label>
+            <span className="text-sm font-bold text-cyan-400">{creatorAllocation}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="10"
+            step="0.5"
+            value={creatorAllocation}
+            onChange={(e) => setCreatorAllocation(parseFloat(e.target.value))}
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0%</span>
+            <span>5%</span>
+            <span>10%</span>
+          </div>
+          {creatorAllocation > 0 && (
+            <div className="mt-2 text-xs text-gray-400 bg-gray-700 p-2 rounded">
+              <p>• Liquid: {(creatorAllocation / 2).toFixed(1)}% (claimable immediately)</p>
+              <p>• Locked: {(creatorAllocation / 2).toFixed(1)}% (claimable at migration)</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3 pt-2 border-t border-gray-700">

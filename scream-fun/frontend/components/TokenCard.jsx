@@ -15,6 +15,12 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
   const [rageTaxInfo, setRageTaxInfo] = useState(null);
   const [devEarnings, setDevEarnings] = useState("0");
   const [rageFundBalance, setRageFundBalance] = useState("0");
+  const [referrerAddress, setReferrerAddress] = useState("");
+  const [lockedTokens, setLockedTokens] = useState("0");
+  const [availableBalance, setAvailableBalance] = useState("0");
+  const [creator, setCreator] = useState("");
+  const [creatorClaimable, setCreatorClaimable] = useState("0");
+  const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
     loadTokenInfo();
@@ -66,6 +72,23 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
         setRageFundBalance(ethers.formatEther(balance));
       }
 
+      // Load locked tokens and available balance
+      const locked = await curve.lockedTokens(userAddress);
+      setLockedTokens(ethers.formatEther(locked.amount));
+
+      const available = await curve.getAvailableBalance(userAddress);
+      setAvailableBalance(ethers.formatEther(available));
+
+      // Load creator info
+      const creatorAddr = await curve.creator();
+      setCreator(creatorAddr);
+      setIsCreator(creatorAddr.toLowerCase() === userAddress.toLowerCase());
+
+      if (creatorAddr.toLowerCase() === userAddress.toLowerCase()) {
+        const claimable = await curve.getCreatorClaimable();
+        setCreatorClaimable(ethers.formatEther(claimable));
+      }
+
       // Check if sell would trigger rage tax
       if (parseFloat(balance) > 0) {
         const [wouldTrigger, taxAmount] = await curve.wouldTriggerRageTax(
@@ -101,7 +124,10 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
       // Allow 1% slippage
       const minTokens = (tokensOut * 99n) / 100n;
 
-      const tx = await curve.buy(minTokens, { value: ethAmount });
+      // Parse referrer address (use zero address if invalid/empty)
+      const referrer = ethers.isAddress(referrerAddress) ? referrerAddress : ethers.ZeroAddress;
+
+      const tx = await curve.buy(minTokens, referrer, { value: ethAmount });
       await tx.wait();
 
       // Play scream sound!
@@ -112,6 +138,27 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
       loadTokenInfo();
     } catch (error) {
       console.error("Error buying:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreatorClaim() {
+    setLoading(true);
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const curve = new ethers.Contract(bondingCurveAddress, BONDING_CURVE_ABI, signer);
+
+      const tx = await curve.claimCreatorTokens();
+      await tx.wait();
+
+      alert(`Success! Claimed ${creatorClaimable} tokens`);
+      loadTokenInfo();
+    } catch (error) {
+      console.error("Error claiming:", error);
       alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -215,28 +262,70 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
         </div>
       </div>
 
+      {/* Creator Claim Section */}
+      {isCreator && parseFloat(creatorClaimable) > 0 && (
+        <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-2 border-yellow-500 p-4 rounded-lg">
+          <h3 className="text-lg font-bold text-yellow-400 mb-2">👑 Creator Allocation</h3>
+          <p className="text-sm text-gray-300 mb-3">
+            You have {parseFloat(creatorClaimable).toFixed(2)} tokens ready to claim!
+          </p>
+          <button
+            onClick={handleCreatorClaim}
+            disabled={loading}
+            className="w-full py-2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold rounded-lg hover:from-yellow-700 hover:to-orange-700 transition disabled:opacity-50"
+          >
+            Claim Creator Tokens
+          </button>
+        </div>
+      )}
+
+      {/* Locked Tokens Warning */}
+      {parseFloat(lockedTokens) > 0 && (
+        <div className="bg-red-900/20 border border-red-500 p-4 rounded-lg">
+          <h3 className="text-sm font-bold text-red-400 mb-1">🔒 Anti-Snipe Lock Active</h3>
+          <p className="text-xs text-gray-300">
+            {parseFloat(lockedTokens).toFixed(2)} tokens bought in first 5 minutes are locked.
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Unlocking gradually over 30 minutes after snipe window ends.
+          </p>
+          <div className="mt-2">
+            <div className="text-xs text-gray-400 mb-1">Available: {parseFloat(availableBalance).toFixed(2)}</div>
+          </div>
+        </div>
+      )}
+
       {/* Buy Section */}
       <div className="bg-gray-700 p-4 rounded-lg">
         <h3 className="text-lg font-bold text-white mb-3">Buy {tokenInfo.symbol}</h3>
-        <div className="flex gap-2">
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={buyAmount}
+              onChange={(e) => setBuyAmount(e.target.value)}
+              placeholder="0.0 ETH"
+              step="0.01"
+              min="0"
+              className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+            />
+            <button
+              onClick={handleBuy}
+              disabled={loading || curveInfo.migrated}
+              className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+            >
+              Buy
+            </button>
+          </div>
           <input
-            type="number"
-            value={buyAmount}
-            onChange={(e) => setBuyAmount(e.target.value)}
-            placeholder="0.0 ETH"
-            step="0.01"
-            min="0"
-            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+            type="text"
+            value={referrerAddress}
+            onChange={(e) => setReferrerAddress(e.target.value)}
+            placeholder="Referrer address (optional, earn them 0.05%)"
+            className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
           />
-          <button
-            onClick={handleBuy}
-            disabled={loading || curveInfo.migrated}
-            className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-          >
-            Buy
-          </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Fee: 0.4% (0.2% dev + 0.2% RAGE)</p>
+        <p className="text-xs text-gray-400 mt-2">Fee: 0.4% (0.2% dev + 0.2% RAGE) + 0.05% referral</p>
       </div>
 
       {/* Sell Section */}

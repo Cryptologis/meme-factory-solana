@@ -32,14 +32,14 @@ export const MONAD_MAINNET = {
 
 // ABIs (simplified - add full ABIs from compiled contracts)
 export const SCREAM_FACTORY_ABI = [
-  "function createToken(string name, string symbol, string imageUrl, string description, string twitter, string telegram, string website) returns (address, address)",
+  "function createToken(string name, string symbol, string imageUrl, string description, string twitter, string telegram, string website, uint256 creatorAllocationBps) returns (address, address)",
   "function getTotalTokens() view returns (uint256)",
   "function getTokenInfo(uint256 index) view returns (tuple(address token, address bondingCurve, address creator, uint256 createdAt, string name, string symbol, string imageUrl, string description, string twitter, string telegram, string website))",
   "event TokenCreated(address indexed token, address indexed bondingCurve, address indexed creator, string name, string symbol, string imageUrl, string description, uint256 tokenId)",
 ];
 
 export const BONDING_CURVE_ABI = [
-  "function buy(uint256 minTokensOut) payable",
+  "function buy(uint256 minTokensOut, address referrer) payable",
   "function sell(uint256 tokenAmount, uint256 minEthOut, bool acceptRageTax)",
   "function calculatePurchaseReturn(uint256 ethAmount) view returns (uint256)",
   "function calculateSaleReturn(uint256 tokenAmount) view returns (uint256)",
@@ -56,8 +56,20 @@ export const BONDING_CURVE_ABI = [
   "function holderCount() view returns (uint256)",
   "function isHolder(address) view returns (bool)",
   "function migrated() view returns (bool)",
-  "event TokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount, uint256 fee)",
+  "function creator() view returns (address)",
+  "function creatorAllocation() view returns (uint256)",
+  "function creatorClaimed() view returns (uint256)",
+  "function getCreatorClaimable() view returns (uint256)",
+  "function claimCreatorTokens()",
+  "function getUnlockedTokens(address user) view returns (uint256)",
+  "function getAvailableBalance(address user) view returns (uint256)",
+  "function lockedTokens(address) view returns (tuple(uint256 amount, uint256 purchaseTime))",
+  "function referralEarnings(address) view returns (uint256)",
+  "function launchTime() view returns (uint256)",
+  "event TokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount, uint256 fee, address indexed referrer, uint256 referralReward)",
   "event TokensSold(address indexed seller, uint256 tokenAmount, uint256 ethAmount, uint256 fee, uint256 rageTax)",
+  "event CreatorClaimed(address indexed creator, uint256 amount)",
+  "event ReferralPaid(address indexed referrer, address indexed buyer, uint256 amount)",
 ];
 
 export const ERC20_ABI = [

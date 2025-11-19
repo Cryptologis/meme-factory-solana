@@ -47,8 +47,17 @@ contract BondingCurve is ReentrancyGuard, Ownable {
     uint256 public totalSellVolume; // Total ETH received from sells
     uint256 public holderCount; // Number of unique holders
     bool public migrated;
+    uint256 public launchTime; // When trading started
+    uint256 public constant SNIPE_WINDOW = 5 minutes; // First 5 min = snipe period
+    uint256 public constant UNLOCK_DURATION = 30 minutes; // Gradual unlock over 30 min
+
+    // Creator allocation
+    address public creator;
+    uint256 public creatorAllocation; // Total tokens allocated to creator
+    uint256 public creatorClaimed; // How much creator has claimed
 
     mapping(address => bool) public isHolder; // Track if address is a holder
+    mapping(address => uint256) public referralEarnings; // Track referrer earnings
 
     // User tracking for rage tax
     struct UserPosition {
@@ -57,33 +66,52 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         uint256 averageBuyPrice; // ETH per token * 1e18
     }
 
+    // Anti-snipe: track locked tokens from snipe window purchases
+    struct LockedTokens {
+        uint256 amount; // Total locked tokens
+        uint256 purchaseTime; // When they were purchased
+    }
+
     mapping(address => UserPosition) public userPositions;
+    mapping(address => LockedTokens) public lockedTokens;
 
     // Events
-    event TokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount, uint256 fee);
+    event TokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount, uint256 fee, address indexed referrer, uint256 referralReward);
     event TokensSold(address indexed seller, uint256 tokenAmount, uint256 ethAmount, uint256 fee, uint256 rageTax);
     event Migrated(address indexed pool, uint256 ethAmount, uint256 tokenAmount);
     event RageTaxCollected(address indexed seller, uint256 amount);
+    event CreatorClaimed(address indexed creator, uint256 amount);
+    event ReferralPaid(address indexed referrer, address indexed buyer, uint256 amount);
 
     constructor(
         address _devWallet,
         address _rageFund,
         address _uniswapFactory,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address _creator,
+        uint256 _creatorAllocationBps // 0-1000 (0-10%)
     ) Ownable(msg.sender) {
         require(_devWallet != address(0), "Invalid dev wallet");
         require(_rageFund != address(0), "Invalid RAGE fund");
+        require(_creatorAllocationBps <= 1000, "Max 10% creator allocation");
 
         devWallet = _devWallet;
         rageFund = RAGEFund(payable(_rageFund));
         uniswapFactory = _uniswapFactory;
+        creator = _creator;
+        launchTime = block.timestamp;
 
         // Deploy token
         token = new ScreamToken(name, symbol, TOTAL_SUPPLY, address(this));
 
-        // Initialize virtual reserves
-        virtualTokenReserve = BONDING_CURVE_SUPPLY;
+        // Calculate creator allocation from bonding curve supply
+        if (_creatorAllocationBps > 0) {
+            creatorAllocation = (BONDING_CURVE_SUPPLY * _creatorAllocationBps) / 10000;
+        }
+
+        // Initialize virtual reserves (minus creator allocation)
+        virtualTokenReserve = BONDING_CURVE_SUPPLY - creatorAllocation;
         ethReserve = VIRTUAL_ETH_RESERVE;
     }
 
@@ -155,9 +183,47 @@ contract BondingCurve is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice Buy tokens with ETH
+     * @notice Calculate how many tokens are unlocked for a user
+     * @dev Tokens bought in first 5 min unlock gradually over next 30 min
      */
-    function buy(uint256 minTokensOut) external payable nonReentrant {
+    function getUnlockedTokens(address user) public view returns (uint256) {
+        LockedTokens memory locked = lockedTokens[user];
+        if (locked.amount == 0) return 0;
+
+        uint256 unlockStartTime = locked.purchaseTime + SNIPE_WINDOW;
+        uint256 unlockEndTime = unlockStartTime + UNLOCK_DURATION;
+
+        if (block.timestamp < unlockStartTime) {
+            // Still in snipe window, nothing unlocked yet
+            return 0;
+        } else if (block.timestamp >= unlockEndTime) {
+            // Fully unlocked
+            return locked.amount;
+        } else {
+            // Gradually unlocking
+            uint256 elapsed = block.timestamp - unlockStartTime;
+            return (locked.amount * elapsed) / UNLOCK_DURATION;
+        }
+    }
+
+    /**
+     * @notice Get available (transferable) balance for user
+     */
+    function getAvailableBalance(address user) public view returns (uint256) {
+        uint256 totalBalance = token.balanceOf(user);
+        uint256 locked = lockedTokens[user].amount;
+        uint256 unlocked = getUnlockedTokens(user);
+
+        // Available = total - (locked - unlocked)
+        return totalBalance - (locked - unlocked);
+    }
+
+    /**
+     * @notice Buy tokens with ETH (with optional referrer)
+     * @param minTokensOut Minimum tokens to receive (slippage protection)
+     * @param referrer Optional referrer address (address(0) if none)
+     */
+    function buy(uint256 minTokensOut, address referrer) external payable nonReentrant {
         require(!migrated, "Already migrated");
         require(msg.value > 0, "No ETH sent");
 
@@ -169,9 +235,15 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         uint256 fee = msg.value * TRADING_FEE_BPS / 10000;
         uint256 ethAfterFee = msg.value - fee;
 
-        // Split fees
-        uint256 devFee = fee / 2;
-        uint256 rageFee = fee - devFee;
+        // Calculate referral reward (0.05% of purchase = 5 bps from dev fee)
+        uint256 referralReward = 0;
+        if (referrer != address(0) && referrer != msg.sender) {
+            referralReward = (msg.value * 5) / 10000; // 0.05%
+        }
+
+        // Split fees (referral comes from dev portion)
+        uint256 devFee = (fee / 2) - referralReward;
+        uint256 rageFee = fee - devFee - referralReward;
 
         // Update reserves
         virtualTokenReserve -= tokensOut;
@@ -197,13 +269,33 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         // Transfer tokens
         require(token.transfer(msg.sender, tokensOut), "Transfer failed");
 
+        // Anti-snipe: Lock tokens if bought in first 5 minutes
+        bool inSnipeWindow = (block.timestamp - launchTime) < SNIPE_WINDOW;
+        if (inSnipeWindow) {
+            LockedTokens storage userLocked = lockedTokens[msg.sender];
+            if (userLocked.amount == 0) {
+                // First purchase in snipe window
+                userLocked.purchaseTime = block.timestamp;
+            }
+            userLocked.amount += tokensOut;
+        }
+
         // Distribute fees
-        (bool devSuccess, ) = devWallet.call{value: devFee}("");
-        require(devSuccess, "Dev fee transfer failed");
+        if (devFee > 0) {
+            (bool devSuccess, ) = devWallet.call{value: devFee}("");
+            require(devSuccess, "Dev fee transfer failed");
+        }
+
+        if (referralReward > 0) {
+            referralEarnings[referrer] += referralReward;
+            (bool refSuccess, ) = referrer.call{value: referralReward}("");
+            require(refSuccess, "Referral payment failed");
+            emit ReferralPaid(referrer, msg.sender, referralReward);
+        }
 
         rageFund.deposit{value: rageFee}(address(token));
 
-        emit TokensPurchased(msg.sender, msg.value, tokensOut, fee);
+        emit TokensPurchased(msg.sender, msg.value, tokensOut, fee, referrer, referralReward);
 
         // Check if migration threshold reached
         if (ethReserve >= MIGRATION_THRESHOLD) {
@@ -217,7 +309,10 @@ contract BondingCurve is ReentrancyGuard, Ownable {
     function sell(uint256 tokenAmount, uint256 minEthOut, bool acceptRageTax) external nonReentrant {
         require(!migrated, "Already migrated");
         require(tokenAmount > 0, "No tokens specified");
-        require(token.balanceOf(msg.sender) >= tokenAmount, "Insufficient balance");
+
+        // Check available balance (excluding locked tokens)
+        uint256 availableBalance = getAvailableBalance(msg.sender);
+        require(availableBalance >= tokenAmount, "Insufficient available balance (some tokens still locked)");
 
         uint256 ethOut = calculateSaleReturn(tokenAmount);
 
@@ -285,6 +380,41 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         // This will create a pair with custom fee structure
 
         emit Migrated(address(0), ethReserve, BONDING_CURVE_SUPPLY - virtualTokenReserve);
+    }
+
+    /**
+     * @notice Creator claims their allocated tokens
+     * @dev 50% available immediately, 50% after migration
+     */
+    function claimCreatorTokens() external nonReentrant {
+        require(msg.sender == creator, "Only creator can claim");
+        require(creatorAllocation > 0, "No allocation");
+
+        uint256 claimable = getCreatorClaimable();
+        require(claimable > 0, "Nothing to claim");
+
+        creatorClaimed += claimable;
+        require(token.transfer(creator, claimable), "Transfer failed");
+
+        emit CreatorClaimed(creator, claimable);
+    }
+
+    /**
+     * @notice Get how much creator can claim now
+     */
+    function getCreatorClaimable() public view returns (uint256) {
+        if (creatorAllocation == 0) return 0;
+
+        uint256 totalClaimable;
+        if (migrated) {
+            // After migration: can claim everything
+            totalClaimable = creatorAllocation;
+        } else {
+            // Before migration: can only claim 50%
+            totalClaimable = creatorAllocation / 2;
+        }
+
+        return totalClaimable - creatorClaimed;
     }
 
     /**
