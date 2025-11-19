@@ -118,6 +118,39 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Important Features Notice */}
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 border-2 border-cyan-500 rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-cyan-400 mb-4">⚡ Platform Features</h2>
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div className="bg-gray-800/50 p-4 rounded-lg">
+              <h3 className="font-bold text-white mb-2">🤝 Referral System</h3>
+              <p className="text-gray-300">
+                Share tokens and earn <span className="text-cyan-400 font-bold">0.05%</span> commission on every buy.
+                Just paste a referrer address when buying.
+              </p>
+            </div>
+            <div className="bg-gray-800/50 p-4 rounded-lg">
+              <h3 className="font-bold text-white mb-2">👑 Creator Allocation</h3>
+              <p className="text-gray-300">
+                Creators can reserve <span className="text-cyan-400 font-bold">0-10%</span> of supply.
+                50% claimable immediately, 50% unlocks at migration.
+              </p>
+            </div>
+            <div className="bg-gray-800/50 p-4 rounded-lg">
+              <h3 className="font-bold text-white mb-2">🔒 Anti-Snipe Protection</h3>
+              <p className="text-gray-300">
+                Tokens bought in <span className="text-cyan-400 font-bold">first 5 min</span> are locked.
+                Unlock gradually over next 30 min. <span className="text-yellow-400">No instant dumps!</span>
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-4 text-center">
+            By using this platform, you acknowledge these features. Trade responsibly!
+          </p>
+        </div>
+      </div>
+
       {/* Create Token */}
       <div className="max-w-2xl mx-auto">
         <CreateTokenForm onSuccess={handleTokenCreated} />
