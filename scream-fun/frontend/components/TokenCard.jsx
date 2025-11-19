@@ -43,12 +43,20 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
       const marketCap = await curve.getMarketCap();
       const migrated = await curve.migrated();
       const tokensSold = await curve.realTokensSold();
+      const totalVolume = await curve.totalVolume();
+      const totalBuyVolume = await curve.totalBuyVolume();
+      const totalSellVolume = await curve.totalSellVolume();
+      const holderCount = await curve.holderCount();
 
       setCurveInfo({
         price: ethers.formatEther(price),
         marketCap: ethers.formatEther(marketCap),
         migrated,
         tokensSold: ethers.formatEther(tokensSold),
+        totalVolume: ethers.formatEther(totalVolume),
+        totalBuyVolume: ethers.formatEther(totalBuyVolume),
+        totalSellVolume: ethers.formatEther(totalSellVolume),
+        holderCount: holderCount.toString(),
       });
 
       // Load RAGE fund balance
@@ -163,7 +171,7 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
       {/* Header */}
       <div className="border-b border-gray-700 pb-4">
         <h2 className="text-3xl font-bold text-white">{tokenInfo.name}</h2>
-        <p className="text-xl text-purple-400 font-mono">${tokenInfo.symbol}</p>
+        <p className="text-xl text-cyan-400 font-mono">${tokenInfo.symbol}</p>
         {curveInfo.migrated && (
           <span className="inline-block mt-2 px-3 py-1 bg-green-600 text-white text-sm rounded-full">
             Migrated to DEX
@@ -182,12 +190,28 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
           <p className="text-lg font-bold text-white">{parseFloat(curveInfo.marketCap).toFixed(2)} ETH</p>
         </div>
         <div className="bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-400">Total Volume</p>
+          <p className="text-lg font-bold text-cyan-400">{parseFloat(curveInfo.totalVolume).toFixed(2)} ETH</p>
+        </div>
+        <div className="bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-400">Holders</p>
+          <p className="text-lg font-bold text-blue-400">{curveInfo.holderCount}</p>
+        </div>
+        <div className="bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-400">Buy Volume</p>
+          <p className="text-lg font-bold text-green-400">{parseFloat(curveInfo.totalBuyVolume).toFixed(2)} ETH</p>
+        </div>
+        <div className="bg-gray-700 p-4 rounded-lg">
+          <p className="text-sm text-gray-400">Sell Volume</p>
+          <p className="text-lg font-bold text-red-400">{parseFloat(curveInfo.totalSellVolume).toFixed(2)} ETH</p>
+        </div>
+        <div className="bg-gray-700 p-4 rounded-lg">
           <p className="text-sm text-gray-400">RAGE Fund</p>
-          <p className="text-lg font-bold text-purple-400">{parseFloat(rageFundBalance).toFixed(4)} ETH</p>
+          <p className="text-lg font-bold text-orange-400">{parseFloat(rageFundBalance).toFixed(4)} ETH</p>
         </div>
         <div className="bg-gray-700 p-4 rounded-lg">
           <p className="text-sm text-gray-400">Your Balance</p>
-          <p className="text-lg font-bold text-green-400">{parseFloat(userBalance).toFixed(2)}</p>
+          <p className="text-lg font-bold text-cyan-400">{parseFloat(userBalance).toFixed(2)}</p>
         </div>
       </div>
 
@@ -202,7 +226,7 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
             placeholder="0.0 ETH"
             step="0.01"
             min="0"
-            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
+            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
           />
           <button
             onClick={handleBuy}
@@ -234,7 +258,7 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
             placeholder="0.0 Tokens"
             step="0.01"
             min="0"
-            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
+            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
           />
           <button
             onClick={() => handleSell(false)}
@@ -268,7 +292,7 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
         </div>
         <div className="w-full bg-gray-600 rounded-full h-3">
           <div
-            className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full transition-all"
+            className="bg-gradient-to-r from-cyan-600 to-blue-600 h-3 rounded-full transition-all"
             style={{ width: `${Math.min((parseFloat(curveInfo.marketCap) / 85) * 100, 100)}%` }}
           />
         </div>

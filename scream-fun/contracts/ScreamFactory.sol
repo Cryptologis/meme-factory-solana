@@ -22,6 +22,11 @@ contract ScreamFactory {
         uint256 createdAt;
         string name;
         string symbol;
+        string imageUrl;
+        string description;
+        string twitter;
+        string telegram;
+        string website;
     }
 
     TokenInfo[] public allTokens;
@@ -33,6 +38,8 @@ contract ScreamFactory {
         address indexed creator,
         string name,
         string symbol,
+        string imageUrl,
+        string description,
         uint256 tokenId
     );
 
@@ -52,12 +59,22 @@ contract ScreamFactory {
      * @notice Create a new meme token with bonding curve
      * @param name Token name
      * @param symbol Token symbol
+     * @param imageUrl Token image URL (IPFS, data URI, or HTTP)
+     * @param description Token description (max 200 chars recommended)
+     * @param twitter Twitter handle (optional)
+     * @param telegram Telegram link (optional)
+     * @param website Website URL (optional)
      * @return token Address of created token
      * @return bondingCurve Address of bonding curve
      */
     function createToken(
         string memory name,
-        string memory symbol
+        string memory symbol,
+        string memory imageUrl,
+        string memory description,
+        string memory twitter,
+        string memory telegram,
+        string memory website
     ) external returns (address token, address bondingCurve) {
         // Deploy bonding curve (which deploys the token)
         BondingCurve curve = new BondingCurve(
@@ -78,13 +95,18 @@ contract ScreamFactory {
             creator: msg.sender,
             createdAt: block.timestamp,
             name: name,
-            symbol: symbol
+            symbol: symbol,
+            imageUrl: imageUrl,
+            description: description,
+            twitter: twitter,
+            telegram: telegram,
+            website: website
         });
 
         allTokens.push(info);
         creatorTokens[msg.sender].push(token);
 
-        emit TokenCreated(token, bondingCurve, msg.sender, name, symbol, allTokens.length - 1);
+        emit TokenCreated(token, bondingCurve, msg.sender, name, symbol, imageUrl, description, allTokens.length - 1);
 
         return (token, bondingCurve);
     }

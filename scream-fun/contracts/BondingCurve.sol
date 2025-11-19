@@ -42,7 +42,13 @@ contract BondingCurve is ReentrancyGuard, Ownable {
     uint256 public virtualTokenReserve;
     uint256 public realTokensSold;
     uint256 public ethReserve;
+    uint256 public totalVolume; // Total ETH volume traded (for King of Scream)
+    uint256 public totalBuyVolume; // Total ETH spent on buys
+    uint256 public totalSellVolume; // Total ETH received from sells
+    uint256 public holderCount; // Number of unique holders
     bool public migrated;
+
+    mapping(address => bool) public isHolder; // Track if address is a holder
 
     // User tracking for rage tax
     struct UserPosition {
@@ -171,6 +177,14 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         virtualTokenReserve -= tokensOut;
         realTokensSold += tokensOut;
         ethReserve += ethAfterFee;
+        totalVolume += msg.value; // Track total volume
+        totalBuyVolume += msg.value; // Track buy volume
+
+        // Track new holders
+        if (!isHolder[msg.sender] && tokensOut > 0) {
+            isHolder[msg.sender] = true;
+            holderCount++;
+        }
 
         // Update user position
         UserPosition storage pos = userPositions[msg.sender];
@@ -241,6 +255,8 @@ contract BondingCurve is ReentrancyGuard, Ownable {
         virtualTokenReserve += tokenAmount;
         realTokensSold -= tokenAmount;
         ethReserve -= (ethOut + fee);
+        totalVolume += (ethOut + fee); // Track total volume
+        totalSellVolume += (ethOut + fee); // Track sell volume
 
         // Transfer tokens from user
         require(token.transferFrom(msg.sender, address(this), tokenAmount), "Transfer failed");

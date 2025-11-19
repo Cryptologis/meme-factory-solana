@@ -32,10 +32,10 @@ export const MONAD_MAINNET = {
 
 // ABIs (simplified - add full ABIs from compiled contracts)
 export const SCREAM_FACTORY_ABI = [
-  "function createToken(string name, string symbol) returns (address, address)",
+  "function createToken(string name, string symbol, string imageUrl, string description, string twitter, string telegram, string website) returns (address, address)",
   "function getTotalTokens() view returns (uint256)",
-  "function getTokenInfo(uint256 index) view returns (tuple(address token, address bondingCurve, address creator, uint256 createdAt, string name, string symbol))",
-  "event TokenCreated(address indexed token, address indexed bondingCurve, address indexed creator, string name, string symbol, uint256 tokenId)",
+  "function getTokenInfo(uint256 index) view returns (tuple(address token, address bondingCurve, address creator, uint256 createdAt, string name, string symbol, string imageUrl, string description, string twitter, string telegram, string website))",
+  "event TokenCreated(address indexed token, address indexed bondingCurve, address indexed creator, string name, string symbol, string imageUrl, string description, uint256 tokenId)",
 ];
 
 export const BONDING_CURVE_ABI = [
@@ -50,6 +50,11 @@ export const BONDING_CURVE_ABI = [
   "function virtualTokenReserve() view returns (uint256)",
   "function realTokensSold() view returns (uint256)",
   "function ethReserve() view returns (uint256)",
+  "function totalVolume() view returns (uint256)",
+  "function totalBuyVolume() view returns (uint256)",
+  "function totalSellVolume() view returns (uint256)",
+  "function holderCount() view returns (uint256)",
+  "function isHolder(address) view returns (bool)",
   "function migrated() view returns (bool)",
   "event TokensPurchased(address indexed buyer, uint256 ethAmount, uint256 tokenAmount, uint256 fee)",
   "event TokensSold(address indexed seller, uint256 tokenAmount, uint256 ethAmount, uint256 fee, uint256 rageTax)",
