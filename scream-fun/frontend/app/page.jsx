@@ -102,9 +102,20 @@ export default function Home() {
             SCREAM.FUN
           </span>
         </h1>
-        <p className="text-xl text-gray-300 mb-6">
+        <p className="text-xl text-gray-300 mb-4">
           The fairest meme coin launchpad on Monad. No rugs. No BS. Just vibes.
         </p>
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="text-sm text-gray-400">Powered by</span>
+          <img
+            src="https://pbs.twimg.com/profile_images/1781042157585088512/n9t2EpjE_400x400.jpg"
+            alt="Monad"
+            className="w-6 h-6 rounded-full"
+          />
+          <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+            Monad
+          </span>
+        </div>
         <div className="flex gap-6 justify-center text-center">
           <div className="bg-gray-800 px-6 py-4 rounded-lg">
             <p className="text-3xl font-bold text-cyan-400">0.4%</p>
