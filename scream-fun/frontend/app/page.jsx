@@ -107,9 +107,11 @@ export default function Home() {
         </p>
         <div className="flex items-center justify-center gap-3 mb-6 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border border-cyan-500/30 rounded-xl px-8 py-4 mx-auto w-fit">
           <span className="text-lg text-gray-300 font-medium">⚡ Powered by</span>
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/50">
-            <span className="text-2xl font-black text-white">M</span>
-          </div>
+          <img
+            src="/monad-logo.jpg"
+            alt="Monad"
+            className="w-12 h-12 object-contain"
+          />
           <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
             MONAD
           </span>
