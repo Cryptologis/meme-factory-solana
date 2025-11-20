@@ -304,7 +304,8 @@ export default function CreateTokenForm({ onSuccess }) {
                 <li>• <span className="text-red-400">2% additional tax</span> ONLY on panic sells</li>
                 <li>• Triggered when selling at <span className="text-red-400">&gt;10% loss</span> from your buy price</li>
                 <li>• <span className="text-orange-400">70%</span> of rage tax → RAGE fund (rewards diamond hands)</li>
-                <li>• <span className="text-green-400">30%</span> of rage tax → dev wallet</li>
+                <li>• <span className="text-green-400">30%</span> of rage tax → dev wallet (sustainability)</li>
+                <li>• 💎 At migration: <span className="text-yellow-400 font-bold">90% of RAGE fund claimable by holders!</span></li>
                 <li>• Protects against paper hands dumping</li>
               </ul>
             </div>
