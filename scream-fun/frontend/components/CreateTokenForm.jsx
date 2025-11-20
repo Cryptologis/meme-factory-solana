@@ -273,14 +273,54 @@ export default function CreateTokenForm({ onSuccess }) {
         </div>
       </div>
 
-      <div className="bg-gray-700 p-4 rounded-lg text-sm text-gray-300">
-        <p className="font-bold mb-2">🎯 No Rugs, Fair Launch:</p>
-        <ul className="list-disc list-inside space-y-1">
-          <li>1B total supply (800M on bonding curve)</li>
-          <li>0.4% trading fee (0.2% dev, 0.2% RAGE fund)</li>
-          <li>2% rage tax on panic sells (&gt;10% loss)</li>
-          <li>Auto-migrates to DEX at 85 ETH market cap</li>
-        </ul>
+      <div className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border border-cyan-500/30 p-5 rounded-lg text-sm text-gray-300 space-y-4">
+        <div>
+          <p className="font-bold text-cyan-400 mb-3 text-base">💎 Tokenomics Breakdown</p>
+
+          <div className="space-y-3">
+            <div className="bg-gray-800/50 p-3 rounded">
+              <p className="font-semibold text-white mb-1">📊 Supply Distribution</p>
+              <ul className="text-xs space-y-1 ml-4">
+                <li>• <span className="text-cyan-400">1 Billion</span> total supply created</li>
+                <li>• <span className="text-cyan-400">800M tokens</span> available on bonding curve (minus creator allocation)</li>
+                <li>• <span className="text-cyan-400">200M tokens</span> auto-locked in DEX liquidity at migration</li>
+                <li>• Creator allocation (0-10%) deducted from bonding curve supply</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-800/50 p-3 rounded">
+              <p className="font-semibold text-white mb-1">💸 Trading Fees (Applied on ALL trades)</p>
+              <ul className="text-xs space-y-1 ml-4">
+                <li>• <span className="text-cyan-400">0.4% total fee</span> on every buy AND sell</li>
+                <li>• <span className="text-green-400">0.2%</span> goes to dev wallet (platform sustainability)</li>
+                <li>• <span className="text-orange-400">0.2%</span> goes to RAGE fund (rewards holders)</li>
+                <li>• <span className="text-yellow-400">0.05%</span> referral bonus (if referrer provided)</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-800/50 p-3 rounded">
+              <p className="font-semibold text-white mb-1">😱 RAGE Tax (Panic Sell Penalty)</p>
+              <ul className="text-xs space-y-1 ml-4">
+                <li>• <span className="text-red-400">2% additional tax</span> ONLY on panic sells</li>
+                <li>• Triggered when selling at <span className="text-red-400">&gt;10% loss</span> from your buy price</li>
+                <li>• <span className="text-orange-400">70%</span> of rage tax → RAGE fund (rewards diamond hands)</li>
+                <li>• <span className="text-green-400">30%</span> of rage tax → dev wallet</li>
+                <li>• Protects against paper hands dumping</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-800/50 p-3 rounded">
+              <p className="font-semibold text-white mb-1">🚀 DEX Migration (Automatic)</p>
+              <ul className="text-xs space-y-1 ml-4">
+                <li>• Triggers automatically at <span className="text-cyan-400">85 ETH market cap</span></li>
+                <li>• All remaining bonding curve ETH → DEX liquidity</li>
+                <li>• 200M tokens paired with ETH on Uniswap V2</li>
+                <li>• Liquidity LP tokens sent to <span className="text-green-400">RAGE fund</span> (community owned)</li>
+                <li>• Trading continues on DEX with normal AMM pricing</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
 
       <button
