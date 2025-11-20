@@ -124,7 +124,10 @@ export default function CreateTokenForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleCreate} className="space-y-4 p-6 bg-gray-800 rounded-lg">
-      <h2 className="text-2xl font-bold text-white mb-4">Create Your Meme Token</h2>
+      <div className="flex items-center gap-3 mb-4">
+        <img src="/logo.png" alt="Scream.fun" className="w-12 h-12 object-contain" />
+        <h2 className="text-2xl font-bold text-white">Create Your Meme Token</h2>
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">

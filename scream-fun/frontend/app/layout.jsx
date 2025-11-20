@@ -4,6 +4,11 @@ import WalletConnect from "@/components/WalletConnect";
 export const metadata = {
   title: "Scream.fun - Fair Meme Coin Launchpad on Monad",
   description: "The fairest (and most profitable) Pump.fun-style launchpad on Monad. Zero creator fees forever.",
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -13,13 +18,18 @@ export default function RootLayout({ children }) {
         <nav className="border-b border-gray-800 bg-black/30 backdrop-blur-lg">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <a href="/" className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
-                  SCREAM.FUN
+              <div className="flex items-center gap-4">
+                <a href="/" className="flex items-center gap-3">
+                  <img src="/logo.png" alt="Scream.fun Logo" className="w-16 h-16 object-contain" />
+                  <div>
+                    <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+                      SCREAM.FUN
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Fair Launch • Zero Rugs • On Monad 🚀
+                    </p>
+                  </div>
                 </a>
-                <p className="text-xs text-gray-400 mt-1">
-                  Fair Launch • Zero Rugs • On Monad 🚀
-                </p>
               </div>
               <WalletConnect />
             </div>

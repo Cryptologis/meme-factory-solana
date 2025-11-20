@@ -93,6 +93,9 @@ export default function Home() {
     <div className="space-y-8">
       {/* Hero */}
       <div className="text-center py-12">
+        <div className="flex justify-center mb-6">
+          <img src="/logo.png" alt="Scream.fun" className="w-48 h-48 object-contain animate-pulse" />
+        </div>
         <h1 className="text-6xl font-black text-white mb-4">
           Welcome to{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">

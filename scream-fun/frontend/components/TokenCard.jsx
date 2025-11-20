@@ -214,9 +214,14 @@ export default function TokenCard({ tokenAddress, bondingCurveAddress }) {
   }
 
   return (
-    <div className="p-6 bg-gray-800 rounded-lg space-y-6">
+    <div className="p-6 bg-gray-800 rounded-lg space-y-6 relative overflow-hidden">
+      {/* Watermark Logo */}
+      <div className="absolute top-4 right-4 opacity-5 pointer-events-none">
+        <img src="/logo.png" alt="" className="w-32 h-32 object-contain" />
+      </div>
+
       {/* Header */}
-      <div className="border-b border-gray-700 pb-4">
+      <div className="border-b border-gray-700 pb-4 relative z-10">
         <h2 className="text-3xl font-bold text-white">{tokenInfo.name}</h2>
         <p className="text-xl text-cyan-400 font-mono">${tokenInfo.symbol}</p>
         {curveInfo.migrated && (
