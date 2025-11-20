@@ -305,8 +305,18 @@ export default function CreateTokenForm({ onSuccess }) {
                 <li>• Triggered when selling at <span className="text-red-400">&gt;10% loss</span> from your buy price</li>
                 <li>• <span className="text-orange-400">70%</span> of rage tax → RAGE fund (rewards diamond hands)</li>
                 <li>• <span className="text-green-400">30%</span> of rage tax → dev wallet (sustainability)</li>
-                <li>• 💎 At migration: <span className="text-yellow-400 font-bold">90% of RAGE fund claimable by holders!</span></li>
                 <li>• Protects against paper hands dumping</li>
+              </ul>
+            </div>
+
+            <div className="bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border border-yellow-500/50 p-3 rounded">
+              <p className="font-semibold text-yellow-400 mb-1">💎 Diamond Hands Reward (Post-Migration)</p>
+              <ul className="text-xs space-y-1 ml-4 text-gray-300">
+                <li>• <span className="text-yellow-400 font-bold">90% of RAGE fund</span> distributed to holders at migration!</li>
+                <li>• <span className="text-cyan-400">Vesting:</span> 25% every 30 days over 90 days</li>
+                <li>• <span className="text-red-400">Holding required:</span> Must maintain token balance to claim</li>
+                <li>• Sell tokens = lose proportional unclaimed rewards</li>
+                <li>• <span className="text-green-400">True diamond hands get maximum rewards!</span></li>
               </ul>
             </div>
 
