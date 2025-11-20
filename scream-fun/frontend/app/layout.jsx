@@ -14,7 +14,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 min-h-screen">
+      <body className="bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 min-h-screen">
         <nav className="border-b border-gray-800 bg-black/30 backdrop-blur-lg">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">

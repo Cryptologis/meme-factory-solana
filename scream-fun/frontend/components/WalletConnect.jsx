@@ -59,14 +59,14 @@ export default function WalletConnect() {
   return (
     <div>
       {address ? (
-        <div className="px-4 py-2 bg-purple-600 text-white rounded-lg font-mono">
+        <div className="px-4 py-2 bg-cyan-600 text-white rounded-lg font-mono">
           {formatAddress(address)}
         </div>
       ) : (
         <button
           onClick={handleConnect}
           disabled={connecting}
-          className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50"
+          className="px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-lg hover:from-cyan-700 hover:to-blue-700 transition disabled:opacity-50"
         >
           {connecting ? "Connecting..." : "Connect Wallet"}
         </button>

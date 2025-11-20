@@ -138,7 +138,7 @@ export default function CreateTokenForm({ onSuccess }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Scream Coin"
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
+          className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none"
           maxLength={50}
         />
       </div>
@@ -232,14 +232,14 @@ export default function CreateTokenForm({ onSuccess }) {
 
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1">
-            Twitter Handle
+            X Profile
           </label>
           <input
             type="text"
             value={twitter}
             onChange={(e) => setTwitter(e.target.value)}
             placeholder="@yourtoken"
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none"
             maxLength={50}
           />
         </div>
